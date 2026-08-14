@@ -27,18 +27,19 @@ MVP v0.1 游戏实现已在仓库并可本地运行，规则单元测试、React
 
 ## 本地运行
 
-需要 Node.js `20.19.0+` 或 `22.12.0+`。
+需要 Node.js 20.x 且 `>=20.19.0`，或 Node.js `>=22.12.0`。
 
 ```bash
 npm install
 npm run dev -- --host 0.0.0.0
 ```
 
-电脑与手机连接同一网络后，在手机浏览器打开终端显示的 `Network` 地址。游戏没有后端服务；手机和电脑只需能访问同一台开发机。
+`npm run dev` 用于本地开发。电脑与手机连接同一网络后，在手机浏览器打开终端显示的 `Network` 地址。`0.0.0.0` 会监听所有网卡，仅应在可信的私有 LAN 使用；不要暴露到公网、公共 Wi-Fi 或做端口映射，试玩后用 `Ctrl-C` 停止服务。
 
 ## 验证
 
 ```bash
+npx playwright install chromium
 npm test
 npm run build
 npm run e2e
@@ -49,6 +50,19 @@ npm run e2e
 固定对局可使用 `?seed=12345`。`testMode=1` 及 `scenario=victory|family|outage` 只在开发环境生效，用于加速自动化胜利和失败场景；production build 始终使用标准规则并忽略这些测试参数。
 
 MVP 不提供对局中途存档或云存档；刷新页面会创建新局，结局页的“重新开始”也会创建全新的种子、状态、事件队列和计时器。
+
+## 真机标准验收
+
+真机验收必须使用 production preview，不使用 `testMode` 或 `scenario`：
+
+```bash
+npm install
+npx playwright install chromium
+npm run build
+npm run preview -- --host 0.0.0.0
+```
+
+电脑与手机连接可信的私有 LAN 后，在手机打开终端显示的 `Network` 地址（不带 `testMode`、`scenario`）。完成一次标准 360 秒对局；同一页面连续重开三局；刷新页面确认没有存档且开启新局；试玩后按 `Ctrl-C` 停止 preview。不要将 preview 暴露到公网、公共 Wi-Fi 或端口映射。
 
 ## 后续原则
 

@@ -29,28 +29,48 @@
 | 连续三局无需刷新 | `src/App.test.tsx`、E2E `can restart three consecutive runs without a page refresh` | 自动化通过（双视口） |
 | 360×800 和 390×844 无横向滚动 | E2E `plays, pauses, upgrades, and restarts without horizontal overflow` | 自动化通过（双视口） |
 | 核心控件在手机视口内且可触控 | E2E `keeps mobile controls and dialogs usable at touch size`、布局几何断言 | 自动化通过（双视口） |
+| UI 能源流、事件和升级效果可读 | `src/components/EnergyBoard.test.tsx`、`src/components/RiskPanel.test.tsx`、`src/components/Overlays.test.tsx`：能源卡、流向、事件/风险和升级/结局文字 | 自动化通过；真机可读性待确认 |
+| 事件有预警和应对窗口 | `src/game/events.test.ts`：warning/active/end 生命周期；`src/components/RiskPanel.test.tsx`：倒计时和风险提示 | 自动化通过；真机可理解性待确认 |
+| 不可恢复错误显示可恢复界面 | `src/components/Overlays.test.tsx`：`GameErrorBoundary` 显示错误并提供重开 | 自动化通过 |
 | 页面后台自动暂停且不补算 | `src/hooks/useGameController.test.tsx`：visibility change、卸载清理和不追赶时间 | 自动化通过 |
 | 构建和全部测试通过 | `npm test`：15 个测试文件、147/147 tests passed；`npm run e2e`：10/10 tests passed（mobile-360、mobile-390）；`npm run build`：TypeScript/Vite production build 通过 | 自动化通过 |
 | production build 使用标准规则 | `src/game/runtimeConfig.test.ts`：非 DEV 始终返回 `standardConfig`；`npm run build` | 自动化通过 |
 | `testMode` 仅 DEV 生效 | `src/game/runtimeConfig.test.ts`：production 忽略 `testMode`，DEV 才选择加速配置 | 自动化通过 |
+| 配置值可调且不改变规则边界 | `src/game/config.ts` 集中导出 `standardConfig`/`acceleratedConfig`；`src/game/runtimeConfig.test.ts` 验证加速只改变计时/场景配置 | 代码审计通过；真机标准配置待确认 |
 | 刷新无存档并开启新局 | `src/App.test.tsx`、`src/hooks/useGameController.test.tsx`：restart 清理状态并生成新 seed | 自动化通过；真机刷新未执行 |
 | 新玩家 30 秒内理解目标 | 规格要求无法完全自动化 | 未执行，待用户/发布前确认 |
+| 新玩家可在 30 秒内指出目标、主要资源、最大危险和可操作项 | 设计规格 15.2、17.4 的人工问题；无自动化替代证据 | 未执行，待无额外提示的新玩家试玩 |
 | 玩家操作至少挽回一次局面 | `src/game/energy.test.ts`、`src/game/engine.test.ts`：控制改变流向与结算结果 | 自动化有规则证据；真机观察未执行 |
 | 至少两种升级路线有可描述差异 | `src/game/upgrades.test.ts`：容量/功率/太阳能/负载/EV/Grid 升级效果 | 自动化有规则证据；真机观察未执行 |
 | 未引入明确排除的系统 | 依赖、文件结构和范围审计：无后端、账号、联网、存档、EV 放电/V2H、组件库 | 文档/代码审计通过 |
 
 ## 真机试玩记录
 
-以下项目尚未在真实物理手机上执行，因此不填入设备、浏览器、种子或结果，避免把模拟视口测试误报为真机证据。
+以下项目尚未在真实物理手机上执行，因此不填入设备、浏览器、种子或结果，避免把模拟视口测试误报为真机证据。执行时必须使用 README 的 production preview 流程，不带 `testMode` 或 `scenario`。
+
+### 可复现执行清单
+
+1. 在可信私有 LAN 执行 `npm install`、`npx playwright install chromium`、`npm run build`，再执行 `npm run preview -- --host 0.0.0.0`；不要使用开发服务器作为标准验收，不要使用公共 Wi-Fi、公网或端口映射。
+2. 手机打开 preview 显示的 `Network` 地址，确认地址不含 `testMode` 或 `scenario`，使用标准配置完成一局 360 秒对局。
+3. 在同一页面连续完成三局并重开，不刷新页面；另行刷新一次，确认没有存档且刷新后是新局。
+4. 记录至少两种升级路线，以及一项实际改变局面的操作；记录结果和主要成功/失败原因。
+5. 给新玩家无额外提示，30 秒内询问其能否指出：主要目标、主要资源、最大危险和可操作项。
+6. 记录设备/浏览器、seed（如手动记录）、最终结果、布局溢出、遮挡、点击区域或其他问题；完成后用 `Ctrl-C` 停止 preview。
 
 | 项目 | 记录 |
 |---|---|
 | 设备与浏览器 | 待用户/发布前确认 |
 | 对局种子 | 待真机试玩 |
+| production preview 与标准配置（无 `testMode`/`scenario`） | 待真机试玩 |
 | 标准配置六分钟对局 | 待真机试玩 |
 | 30 秒内识别的主要目标 | 待新玩家/用户试玩 |
+| 30 秒内指出的主要资源 | 待新玩家/用户试玩 |
+| 30 秒内指出的最大危险 | 待新玩家/用户试玩 |
+| 30 秒内指出的可操作项 | 待新玩家/用户试玩 |
+| 至少两种升级路线 | 待真机试玩 |
 | 改变局面的操作 | 待真机试玩 |
 | 最终结果与原因 | 待真机试玩 |
+| 刷新后新局且无存档 | 待真机试玩 |
 | 连续三局无需刷新 | 待真机试玩；自动化双视口已通过 |
 | 布局或点击问题 | 待真机试玩 |
 
