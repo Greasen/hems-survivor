@@ -8,9 +8,49 @@ async function chooseThreeUpgrades(page: import('@playwright/test').Page) {
   }
 }
 
+async function expectCoreControlsInViewport(page: import('@playwright/test').Page) {
+  const viewport = page.viewportSize();
+  if (!viewport) throw new Error('Playwright viewport is required for mobile geometry assertions');
+
+  const controls = [
+    page.getByRole('button', { name: '暂停游戏' }),
+    page.getByRole('button', { name: 'Battery 充电' }),
+    page.getByRole('button', { name: 'Battery 自动' }),
+    page.getByRole('button', { name: 'Battery 放电' }),
+    page.getByRole('button', { name: 'EV 暂停' }),
+    page.getByRole('button', { name: 'EV 充电' }),
+    page.getByRole('switch', { name: '允许买电' }),
+    page.getByRole('switch', { name: '允许卖电' }),
+  ];
+
+  for (const control of controls) {
+    await expect(control).toBeVisible();
+    const box = await control.boundingBox();
+    expect(box, `control ${await control.getAttribute('aria-label')} should be laid out`).not.toBeNull();
+    if (!box) continue;
+    expect(box.y, 'control must not be above the viewport').toBeGreaterThanOrEqual(0);
+    expect(box.y + box.height, 'control must not be below the viewport').toBeLessThanOrEqual(viewport.height);
+    expect(box.x, 'control must not overflow left').toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width, 'control must not overflow right').toBeLessThanOrEqual(viewport.width);
+  }
+
+  await expect.poll(() => page.evaluate(() => ({
+    scrollY: window.scrollY,
+    scrollHeight: document.documentElement.scrollHeight,
+    clientHeight: document.documentElement.clientHeight,
+    horizontalOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  }))).toEqual({
+    scrollY: 0,
+    scrollHeight: viewport.height,
+    clientHeight: viewport.height,
+    horizontalOverflow: 0,
+  });
+}
+
 test('plays, pauses, upgrades, and restarts without horizontal overflow', async ({ page }) => {
   await page.goto('/?seed=12345&testMode=1');
   await page.getByRole('button', { name: '开始游戏' }).click();
+  await expectCoreControlsInViewport(page);
   await page.getByRole('button', { name: 'EV 充电' }).click();
   await page.getByRole('button', { name: 'Battery 放电' }).click();
   await page.getByRole('button', { name: '暂停游戏' }).click();

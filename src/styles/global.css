@@ -20,7 +20,7 @@
 }
 
 * { box-sizing: border-box; }
-html, body, #root { min-height: 100%; margin: 0; }
+html, body, #root { height: 100%; min-height: 100%; margin: 0; }
 body { min-width: 320px; background: radial-gradient(circle at top, #12304a, #08131f 55%); }
 button, input { font: inherit; }
 button { min-height: 44px; color: inherit; background: var(--surface-raised); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; }
@@ -31,30 +31,39 @@ button:disabled { color: var(--muted); opacity: 0.62; }
 .game-shell {
   width: 100%;
   max-width: 520px;
-  min-height: 100dvh;
+  height: 100dvh;
+  min-height: 0;
   margin: 0 auto;
   padding: max(10px, var(--safe-top)) max(12px, var(--safe-right)) max(12px, var(--safe-bottom)) max(12px, var(--safe-left));
   display: grid;
-  grid-template-rows: auto auto auto auto;
-  gap: 10px;
-  overflow-x: clip;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  gap: 6px;
+  overflow: hidden;
 }
 .status-bar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; gap: 6px; align-items: center; }
 .status-bar__item { min-width: 0; font-size: 12px; color: var(--muted); }
 .status-bar__value { display: block; color: #fff; font-size: 15px; font-weight: 700; }
-.energy-board { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.energy-board { min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: grid; align-content: start; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
 .energy-card { min-width: 0; padding: 10px; border: 1px solid var(--border); border-radius: 12px; background: color-mix(in srgb, var(--surface) 92%, transparent); }
+.energy-card h2, .energy-card p { margin: 0; }
+.energy-card h2 { font-size: 14px; line-height: 1.2; }
+.energy-card p { margin-top: 4px; }
 .energy-card--home { grid-column: 1 / -1; border-color: var(--home); }
 .energy-card--solar { border-color: var(--solar); }
 .energy-card--battery { border-color: var(--battery); }
 .energy-card--ev { border-color: var(--ev); }
 .energy-card--grid { border-color: var(--grid); }
 .energy-flows { grid-column: 1 / -1; margin: 0; padding: 8px 10px 8px 28px; color: var(--muted); font-size: 12px; }
-.risk-panel { padding: 10px; border-radius: 12px; background: var(--surface); border-left: 4px solid var(--home); }
+.risk-panel { display: grid; gap: 4px; padding: 8px 10px; border-radius: 12px; background: var(--surface); border-left: 4px solid var(--home); }
+.risk-panel h2, .risk-panel p { margin: 0; }
+.risk-panel h2 { font-size: 14px; line-height: 1.2; }
+.risk-panel__event { display: grid; gap: 2px; }
 .risk-panel--alert { border-left-color: var(--danger); }
-.control-panel { display: grid; gap: 8px; padding-bottom: 4px; }
-.control-group { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-.control-group--two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.control-panel { display: grid; gap: 4px; padding-bottom: 0; }
+.control-panel fieldset { min-inline-size: 0; margin: 0; padding: 3px 6px 5px; }
+.control-panel legend { padding: 0 4px; font-size: 12px; line-height: 1.1; }
+.control-group { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+.control-group--two { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
 .grid-switch { min-height: 44px; display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 8px; padding: 0 8px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-raised); }
 .grid-switch input[type="checkbox"] { width: 20px; height: 20px; margin: 0; }
 .grid-switch:has(input:disabled) { color: var(--muted); }
@@ -66,7 +75,7 @@ button:disabled { color: var(--muted); opacity: 0.62; }
 
 @media (min-width: 700px) {
   body { padding: 24px 0; }
-  .game-shell { min-height: calc(100dvh - 48px); border: 1px solid var(--border); border-radius: 20px; background: rgb(8 19 31 / 88%); }
+  .game-shell { height: calc(100dvh - 48px); min-height: 0; border: 1px solid var(--border); border-radius: 20px; background: rgb(8 19 31 / 88%); }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
