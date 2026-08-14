@@ -48,7 +48,7 @@ export function RiskPanel({ state }: RiskPanelProps) {
   const gridReopenIn = getGridReopenCountdown(state);
 
   return (
-    <section className="risk-panel" aria-label="事件与风险">
+    <section className={`risk-panel${riskRole === 'alert' ? ' risk-panel--alert' : ''}`} aria-label="事件与风险">
       <div className="risk-panel__event" aria-label="当前事件">
         <h2>事件</h2>
         {state.event ? (

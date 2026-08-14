@@ -47,7 +47,7 @@ button:disabled { color: var(--muted); opacity: 0.62; }
 .energy-card--grid { border-color: var(--grid); }
 .energy-flows { grid-column: 1 / -1; margin: 0; padding: 8px 10px 8px 28px; color: var(--muted); font-size: 12px; }
 .risk-panel { padding: 10px; border-radius: 12px; background: var(--surface); border-left: 4px solid var(--home); }
-.risk-panel[role="alert"] { border-left-color: var(--danger); }
+.risk-panel--alert { border-left-color: var(--danger); }
 .control-panel { display: grid; gap: 8px; padding-bottom: 4px; }
 .control-group { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
 .control-group--two { grid-template-columns: repeat(2, minmax(0, 1fr)); }

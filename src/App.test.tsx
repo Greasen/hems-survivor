@@ -44,11 +44,11 @@ describe('App', () => {
 
   it('moves from ready to running and exposes all core controls', async () => {
     const user = setup();
-    render(<App />);
+    const { container } = render(<App />);
 
     expect(screen.getByRole('heading', { name: '电量守卫', level: 1 })).toBeInTheDocument();
     expect(screen.getByRole('dialog', { name: '电量守卫' })).toBeInTheDocument();
-    expect(document.querySelector('.overlay')).toBeInTheDocument();
+    expect(container.querySelector('.overlay')).toBeInTheDocument();
     await startGame(user);
 
     expect(screen.getByText('时间 00:00')).toBeInTheDocument();

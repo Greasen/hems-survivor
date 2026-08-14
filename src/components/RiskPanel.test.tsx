@@ -72,6 +72,14 @@ describe('RiskPanel', () => {
     expect(screen.getByRole('status')).toHaveTextContent('当前风险稳定');
   });
 
+  it('marks the panel as alert only when the primary risk is not stable', () => {
+    const view = render(<RiskPanel state={stateAt({ outageTicks: 10 })} />);
+    expect(view.container.querySelector('.risk-panel')).toHaveClass('risk-panel--alert');
+
+    view.rerender(<RiskPanel state={stateAt()} />);
+    expect(view.container.querySelector('.risk-panel')).not.toHaveClass('risk-panel--alert');
+  });
+
   it('exposes risk text semantically instead of relying on color', () => {
     render(<RiskPanel state={stateAt({ outageTicks: 10 })} />);
     expect(screen.getByRole('alert')).toHaveTextContent('持续断电风险');
