@@ -21,6 +21,7 @@
 - [游戏设计](docs/GAME_DESIGN.md)
 - [MVP v0.1 范围](docs/MVP_V0.1.md)
 - [MVP v0.1 执行计划](docs/MVP_V0.1_PLAN.md)
+- [MVP v0.1 完整设计规格](docs/superpowers/specs/2026-08-14-mvp-v0.1-design.md)
 - [Codex 实现说明](docs/CODEX_INSTRUCTIONS.md)
 
 ## 后续原则
