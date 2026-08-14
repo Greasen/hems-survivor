@@ -17,18 +17,18 @@ export function StatusBar({ state, onPause }: StatusBarProps) {
   return (
     <header className="status-bar">
       <div className="status-bar__item">
-        <span>时间 {formatTime(state.tick)}</span>
+        <span className="status-bar__value">时间 {formatTime(state.tick)}</span>
       </div>
       <div className="status-bar__item">
-        <span>Money {money.toFixed(1)}</span>
+        <span className="status-bar__value">Money {money.toFixed(1)}</span>
       </div>
       <label className="status-bar__item" aria-label="家庭满意度">
         <span>Family</span>
         <meter min={0} max={100} value={family} />
-        <strong>{family.toFixed(1)}</strong>
+        <strong className="status-bar__value">{family.toFixed(1)}</strong>
       </label>
       <div className="status-bar__item">
-        <span>Score {Math.round(score)}</span>
+        <span className="status-bar__value">Score {Math.round(score)}</span>
       </div>
       <button type="button" onClick={onPause} aria-label="暂停游戏">
         暂停

@@ -1,0 +1,66 @@
+:root {
+  color: #ecf7ff;
+  background: #08131f;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+  --surface: #102235;
+  --surface-raised: #173149;
+  --border: #31506a;
+  --muted: #9eb5c6;
+  --solar: #47d7e8;
+  --home: #f1b84b;
+  --battery: #5fda8b;
+  --ev: #bc8cff;
+  --grid: #63a7ff;
+  --danger: #ff6f74;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { min-height: 100%; margin: 0; }
+body { min-width: 320px; background: radial-gradient(circle at top, #12304a, #08131f 55%); }
+button, input { font: inherit; }
+button { min-height: 44px; color: inherit; background: var(--surface-raised); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; }
+button:focus-visible, input:focus-visible { outline: 3px solid #ffffff; outline-offset: 2px; }
+button[aria-pressed="true"] { border-color: var(--battery); box-shadow: inset 0 0 0 1px var(--battery); }
+button:disabled { color: var(--muted); opacity: 0.62; }
+
+.game-shell {
+  width: 100%;
+  max-width: 520px;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: max(10px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-rows: auto auto auto auto;
+  gap: 10px;
+  overflow-x: clip;
+}
+.status-bar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; gap: 6px; align-items: center; }
+.status-bar__item { min-width: 0; font-size: 12px; color: var(--muted); }
+.status-bar__value { display: block; color: #fff; font-size: 15px; font-weight: 700; }
+.energy-board { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.energy-card { min-width: 0; padding: 10px; border: 1px solid var(--border); border-radius: 12px; background: color-mix(in srgb, var(--surface) 92%, transparent); }
+.energy-card--home { grid-column: 1 / -1; border-color: var(--home); }
+.energy-card--solar { border-color: var(--solar); }
+.energy-card--battery { border-color: var(--battery); }
+.energy-card--ev { border-color: var(--ev); }
+.energy-card--grid { border-color: var(--grid); }
+.energy-flows { grid-column: 1 / -1; margin: 0; padding: 8px 10px 8px 28px; color: var(--muted); font-size: 12px; }
+.risk-panel { padding: 10px; border-radius: 12px; background: var(--surface); border-left: 4px solid var(--home); }
+.risk-panel[role="alert"] { border-left-color: var(--danger); }
+.control-panel { display: grid; gap: 8px; padding-bottom: 4px; }
+.control-group { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.control-group--two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.disabled-reason { color: var(--muted); font-size: 12px; }
+.overlay { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 16px; background: rgb(3 10 17 / 82%); overflow-y: auto; }
+.overlay__card { width: min(100%, 480px); max-height: calc(100dvh - 32px); overflow-y: auto; padding: 20px; border: 1px solid var(--border); border-radius: 16px; background: #102235; box-shadow: 0 20px 60px rgb(0 0 0 / 45%); }
+.upgrade-grid { display: grid; gap: 10px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+@media (min-width: 700px) {
+  body { padding: 24px 0; }
+  .game-shell { min-height: calc(100dvh - 48px); border: 1px solid var(--border); border-radius: 20px; background: rgb(8 19 31 / 88%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+}

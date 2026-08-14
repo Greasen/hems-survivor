@@ -64,7 +64,7 @@ export function ModalDialog({ titleId, className, children }: ModalDialogProps) 
       aria-labelledby={titleId}
       onKeyDown={handleKeyDown}
     >
-      {children}
+      <div className="overlay__card">{children}</div>
     </section>
   );
 }

@@ -48,6 +48,7 @@ describe('App', () => {
 
     expect(screen.getByRole('heading', { name: '电量守卫', level: 1 })).toBeInTheDocument();
     expect(screen.getByRole('dialog', { name: '电量守卫' })).toBeInTheDocument();
+    expect(document.querySelector('.overlay')).toBeInTheDocument();
     await startGame(user);
 
     expect(screen.getByText('时间 00:00')).toBeInTheDocument();
@@ -171,5 +172,17 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: '重新开始' }));
     expect(screen.getByRole('dialog', { name: '电量守卫' })).toBeInTheDocument();
     expect(screen.getByText('时间 00:00')).toBeInTheDocument();
+  });
+
+  it('exposes the mobile layout regions and named controls', () => {
+    const { container } = render(<App />);
+    expect(container.querySelector('.game-shell')).toBeInTheDocument();
+    expect(container.querySelector('.status-bar')).toBeInTheDocument();
+    expect(container.querySelector('.energy-board')).toBeInTheDocument();
+    expect(container.querySelector('.risk-panel')).toBeInTheDocument();
+    expect(container.querySelector('.control-panel')).toBeInTheDocument();
+    for (const control of container.querySelectorAll('button, input')) {
+      expect(control).toHaveAccessibleName();
+    }
   });
 });

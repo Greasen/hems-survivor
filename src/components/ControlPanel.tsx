@@ -29,7 +29,7 @@ export function ControlPanel({ state, onAction }: ControlPanelProps) {
     <section className="control-panel" aria-label="能源控制">
       <fieldset>
         <legend>Battery 模式</legend>
-        <div role="group" aria-label="Battery 模式">
+        <div className="control-group" role="group" aria-label="Battery 模式">
           {batteryModes.map(([mode, label]) => (
             <button
               key={mode}
@@ -46,7 +46,7 @@ export function ControlPanel({ state, onAction }: ControlPanelProps) {
 
       <fieldset>
         <legend>EV 模式</legend>
-        <div role="group" aria-label="EV 模式">
+        <div className="control-group control-group--two" role="group" aria-label="EV 模式">
           {evModes.map(([mode, label]) => (
             <button
               key={mode}
@@ -63,7 +63,7 @@ export function ControlPanel({ state, onAction }: ControlPanelProps) {
 
       <fieldset>
         <legend>Grid 控制</legend>
-        <label>
+        <label className="control-group control-group--two">
           <input
             type="checkbox"
             role="switch"
@@ -74,7 +74,7 @@ export function ControlPanel({ state, onAction }: ControlPanelProps) {
           />
           允许买电
         </label>
-        <label>
+        <label className="control-group control-group--two">
           <input
             type="checkbox"
             role="switch"
@@ -85,7 +85,7 @@ export function ControlPanel({ state, onAction }: ControlPanelProps) {
           />
           允许卖电
         </label>
-        {gridReason ? <p role="status">{gridReason}</p> : null}
+        {gridReason ? <p className="disabled-reason" role="status">{gridReason}</p> : null}
       </fieldset>
     </section>
   );

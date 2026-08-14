@@ -22,7 +22,7 @@ export function UpgradeOverlay({ choices, onChoose }: UpgradeOverlayProps) {
   return (
     <ModalDialog className="overlay overlay--upgrade" titleId="upgrade-title">
       <h2 id="upgrade-title">选择升级</h2>
-      <div className="upgrade-cards">
+      <div className="upgrade-grid">
         {choices.map((upgrade) => {
           const text = upgradeText[upgrade];
           return (
