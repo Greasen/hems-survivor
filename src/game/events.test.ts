@@ -4,6 +4,17 @@ import { standardConfig } from './config';
 import { stateAt } from '../test/fixtures';
 
 describe('events', () => {
+  it('starts every first-event warning at Tick 55 and activates at Tick 60', () => {
+    for (const seed of Array.from({ length: 32 }, (_, index) => index)) {
+      const input = stateAt({ tick: 54, nextEventWarningAt: 55, lastEventKind: null, randomState: seed });
+      const warned = advanceEventBeforeEnergy(input, standardConfig, 55);
+      expect(warned.state.event?.startsAt, `seed ${seed}`).toBe(60);
+      expect(warned.state.event?.stage, `seed ${seed}`).toBe('warning');
+      const active = advanceEventBeforeEnergy({ ...warned.state, tick: 59 }, standardConfig, 60);
+      expect(active.state.event?.stage, `seed ${seed}`).toBe('active');
+    }
+  });
+
   it('starts the first warning at Tick 55 and activates it at its startsAt Tick', () => {
     const warned = advanceEventBeforeEnergy(stateAt({ tick: 54, nextEventWarningAt: 55 }), standardConfig, 55);
     expect(warned.state.event?.stage).toBe('warning');

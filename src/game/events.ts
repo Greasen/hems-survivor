@@ -19,8 +19,9 @@ function isPressurePeriod(nextTick: number, config: GameConfig): boolean {
   return pressurePhase ? nextTick >= pressurePhase.from : nextTick >= 180;
 }
 
-function chooseEvent(state: GameState): { kind: EventKind; randomState: number } {
-  const choices = EVENT_KINDS.filter((kind) => kind !== state.lastEventKind);
+function chooseEvent(state: GameState, config: GameConfig, firstEvent: boolean): { kind: EventKind; randomState: number } {
+  const pool = firstEvent ? EVENT_KINDS.filter((kind) => config.events[kind].warning === 5) : EVENT_KINDS;
+  const choices = pool.filter((kind) => kind !== state.lastEventKind);
   const draw = randomBetween(state.randomState, 0, choices.length);
   return { kind: choices[Math.floor(draw.value)], randomState: draw.state };
 }
@@ -56,7 +57,8 @@ export function advanceEventBeforeEnergy(
     return { state, randomState: state.randomState };
   }
 
-  const selected = chooseEvent(state);
+  const firstEvent = state.nextEventWarningAt === 55 && state.lastEventKind === null;
+  const selected = chooseEvent(state, config, firstEvent);
   const settings = config.events[selected.kind];
   const startsAt = nextTick + settings.warning;
   const endsAt = startsAt + settings.duration;
