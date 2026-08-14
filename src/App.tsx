@@ -31,6 +31,7 @@ function GameScreen({ config }: { config: GameConfig }) {
           <UpgradeOverlay
             choices={game.state.pendingUpgrades}
             onChoose={(upgrade) => game.dispatch({ type: 'chooseUpgrade', upgrade })}
+            config={config}
           />
         )}
         {(game.state.status === 'victory' || game.state.status === 'gameOver') && (

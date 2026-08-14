@@ -9,6 +9,7 @@ import { UpgradeOverlay } from './UpgradeOverlay';
 import { PauseOverlay } from './PauseOverlay';
 import { ResultOverlay } from './ResultOverlay';
 import { GameErrorBoundary } from './GameErrorBoundary';
+import { standardConfig } from '../game/config';
 
 afterEach(cleanup);
 
@@ -84,6 +85,17 @@ describe('UpgradeOverlay', () => {
     expect(onChoose).toHaveBeenCalledOnce();
     expect(onChoose).toHaveBeenCalledWith('battery_capacity');
     expect(buttons.every((button) => button.hasAttribute('disabled'))).toBe(true);
+  });
+
+  it('renders configured effects before the player selects an upgrade', () => {
+    const config = {
+      ...standardConfig,
+      upgrades: { ...standardConfig.upgrades, batteryCapacity: 40, batteryInitialBonus: 7, batteryPower: 0.5 },
+    };
+    render(<UpgradeOverlay choices={['battery_capacity', 'battery_power']} onChoose={vi.fn()} config={config} />);
+    expect(screen.getByText('Battery 容量 +40，当前电量 +7')).toBeInTheDocument();
+    expect(screen.getByText('Battery 充放电功率各 +0.5')).toBeInTheDocument();
+    expect(screen.queryByText('Battery 容量 +25，当前电量 +10')).not.toBeInTheDocument();
   });
 });
 

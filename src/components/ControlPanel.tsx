@@ -28,6 +28,8 @@ export function ControlPanel({ state, onAction, config = standardConfig }: Contr
   const gridReason = gridUnavailable
     ? (reopenIn === null ? '电网关闭' : `电网将在 ${reopenIn} 秒后重新开放`)
     : state.resources.money <= 0 ? '余额不足' : null;
+  const buyReason = gridReason;
+  const sellReason = gridUnavailable ? gridReason : null;
 
   return (
     <section className="control-panel" aria-label="能源控制">
@@ -74,7 +76,7 @@ export function ControlPanel({ state, onAction, config = standardConfig }: Contr
             aria-label="允许买电"
             checked={state.grid.buyEnabled}
             disabled={buyUnavailable}
-            aria-describedby={gridReason ? gridReasonId : undefined}
+            aria-describedby={buyReason ? gridReasonId : undefined}
             onChange={(event) => onAction({ type: 'setGridBuy', enabled: event.target.checked })}
           />
           允许买电
@@ -86,7 +88,7 @@ export function ControlPanel({ state, onAction, config = standardConfig }: Contr
             aria-label="允许卖电"
             checked={state.grid.sellEnabled}
             disabled={gridUnavailable}
-            aria-describedby={gridReason ? gridReasonId : undefined}
+            aria-describedby={sellReason ? gridReasonId : undefined}
             onChange={(event) => onAction({ type: 'setGridSell', enabled: event.target.checked })}
           />
           允许卖电

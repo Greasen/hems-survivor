@@ -99,4 +99,15 @@ describe('ControlPanel', () => {
     expect(screen.getByRole('switch', { name: '允许买电' })).toHaveAttribute('aria-describedby', reasonId);
     expect(screen.getByRole('switch', { name: '允许卖电' })).toHaveAttribute('aria-describedby', reasonId);
   });
+
+  it('associates only the buy switch with the insufficient-money explanation when grid is available', () => {
+    render(<ControlPanel state={stateAt({ resources: { money: 0, family: 100, score: 0 }, grid: { buyEnabled: true, sellEnabled: false, available: true } })} onAction={vi.fn()} />);
+    const reason = screen.getByText('余额不足');
+    const reasonId = reason.getAttribute('id');
+    expect(reasonId).toBeTruthy();
+    expect(screen.getByRole('switch', { name: '允许买电' })).toBeDisabled();
+    expect(screen.getByRole('switch', { name: '允许买电' })).toHaveAttribute('aria-describedby', reasonId);
+    expect(screen.getByRole('switch', { name: '允许卖电' })).not.toBeDisabled();
+    expect(screen.getByRole('switch', { name: '允许卖电' })).not.toHaveAttribute('aria-describedby');
+  });
 });
