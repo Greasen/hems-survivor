@@ -39,10 +39,10 @@ export const standardConfig: GameConfig = {
     gridSellMultiplier: 1.15,
   },
   phase: [
-    { from: 0, to: 59, solar: 1.4, home: 1 },
-    { from: 60, to: 179, solar: 1.2, home: 1.1 },
-    { from: 180, to: 299, solar: 0.9, home: 1.2 },
-    { from: 300, to: 359, solar: 0.5, home: 1.4 },
+    { name: 'safe', from: 0, to: 59, solar: 1.4, home: 1 },
+    { name: 'learning', from: 60, to: 179, solar: 1.2, home: 1.1 },
+    { name: 'pressure', from: 180, to: 299, solar: 0.9, home: 1.2 },
+    { name: 'crisis', from: 300, to: 359, solar: 0.5, home: 1.4 },
   ],
 };
 

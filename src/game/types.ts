@@ -46,7 +46,7 @@ export interface GameConfig {
     gridBuyMultiplier: number;
     gridSellMultiplier: number;
   };
-  phase: readonly { from: number; to: number; solar: number; home: number }[];
+  phase: readonly { name: string; from: number; to: number; solar: number; home: number }[];
 }
 
 export interface BatteryState { level: number; capacity: number; chargePower: number; dischargePower: number; mode: BatteryMode }
