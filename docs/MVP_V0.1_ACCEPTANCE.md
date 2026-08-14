@@ -29,11 +29,11 @@
 | 连续三局无需刷新 | `src/App.test.tsx`、E2E `can restart three consecutive runs without a page refresh` | 自动化通过（双视口） |
 | 360×800 和 390×844 无横向滚动 | E2E `plays, pauses, upgrades, and restarts without horizontal overflow` | 自动化通过（双视口） |
 | 核心控件在手机视口内且可触控 | E2E `keeps mobile controls and dialogs usable at touch size`、布局几何断言 | 自动化通过（双视口） |
-| UI 能源流、事件和升级效果可读 | `src/components/EnergyBoard.test.tsx`、`src/components/RiskPanel.test.tsx`、`src/components/Overlays.test.tsx`：能源卡、流向、当前事件/风险和升级弹层/结局文字；未覆盖完整 live effect 反馈 | 局部渲染测试通过；整体 live event/upgrade feedback 需最终审计确认，真机可读性待确认 |
-| 事件有预警和应对窗口 | `src/game/events.test.ts`：warning/active/end 生命周期；`src/components/RiskPanel.test.tsx`：倒计时和风险提示；未证明每种 live event 的完整操作反馈 | 生命周期/局部提示测试通过；整体应对窗口需最终审计确认，真机可理解性待确认 |
+| UI 能源流、事件和升级效果可读 | `src/components/EnergyBoard.test.tsx`：能源流向与配置驱动升级效果；`src/components/RiskPanel.test.tsx`：中文 live milestone 反馈；`src/components/Overlays.test.tsx`：升级配置效果与结局文字；E2E 覆盖升级流程 | 现有自动化覆盖上述渲染/反馈路径；不声称真机可读性 |
+| 事件有预警和应对窗口 | `src/game/events.test.ts`：warning/active/end 生命周期；`src/components/RiskPanel.test.tsx`：warning 倒计时、中文 milestone 与持续断电倒计时；E2E 覆盖持续断电结局 | 现有自动化覆盖事件生命周期和风险反馈；不声称真机可理解性 |
 | 不可恢复错误显示可恢复界面 | `src/components/Overlays.test.tsx`：`GameErrorBoundary` 显示错误并提供重开 | 自动化通过 |
 | 页面后台自动暂停且不补算 | `src/hooks/useGameController.test.tsx`：visibility change、卸载清理和不追赶时间 | 自动化通过 |
-| 构建和全部测试通过 | `npm test`：15 个测试文件、147/147 tests passed；`npm run e2e`：10/10 tests passed（mobile-360、mobile-390）；`npm run build`：TypeScript/Vite production build 通过 | 自动化通过 |
+| 构建和全部测试通过 | `npm test`：16 个测试文件、162/162 tests passed；`npm run e2e`：10/10 tests passed（mobile-360、mobile-390）；`npm run build`：TypeScript/Vite production build 通过 | 自动化通过（`npm test` fresh 于当前 HEAD f9ee1d7） |
 | production build 使用标准规则 | `src/game/runtimeConfig.test.ts`：非 DEV 始终返回 `standardConfig`；`npm run build` | 自动化通过 |
 | `testMode` 仅 DEV 生效 | `src/game/runtimeConfig.test.ts`：production 忽略 `testMode`，DEV 才选择加速配置 | 自动化通过 |
 | 配置值可调且不改变规则边界 | `src/game/config.ts` 集中导出 `standardConfig`/`acceleratedConfig`；`src/game/runtimeConfig.test.ts` 验证加速只改变计时/场景配置 | 代码审计通过；真机标准配置待确认 |
@@ -89,7 +89,7 @@
 | `npm run build` | 通过 | `tsc --noEmit && vite build` 完成，Vite 37 modules transformed，退出码 0 |
 | `npm run e2e` | 通过（提升权限后） | 10 tests passed，覆盖 `mobile-360` 和 `mobile-390`，退出码 0 |
 | `git diff --check` | 通过 | 退出码 0，无空白错误 |
-| `git status --short` | 历史快照 | 该记录发生在文档初稿提交前，当时仅有 `README.md` 与 `docs/MVP_V0.1_ACCEPTANCE.md`；此后新增 `package.json` 的 `preview` script，当前范围以父代理最终 fresh 验证为准 |
+| `git status --short` | 历史快照 | 该记录发生在本次文档更新前，当时工作树仅有 `docs/MVP_V0.1_ACCEPTANCE.md` 变更；当前最终 clean 状态待父代理提交后 fresh 验证 |
 
 首次在受限沙箱执行 `npm run e2e` 时本地测试服务器监听被系统以 `EPERM` 拒绝；在获准启动本地服务器后重跑，10 项全部通过。该环境事实不影响测试结果，但保留在记录中以便复核。
 
