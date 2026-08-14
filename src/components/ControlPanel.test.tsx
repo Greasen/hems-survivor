@@ -1,0 +1,49 @@
+import { cleanup, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { ControlPanel } from './ControlPanel';
+import { stateAt } from '../test/fixtures';
+import type { PlayerAction } from '../game/types';
+
+describe('ControlPanel', () => {
+  afterEach(cleanup);
+
+  it('emits exact battery, EV, and grid actions without mutating state', async () => {
+    const user = userEvent.setup();
+    const onAction = vi.fn<(action: PlayerAction) => void>();
+    const state = stateAt();
+    render(<ControlPanel state={state} onAction={onAction} />);
+
+    await user.click(screen.getByRole('button', { name: 'Battery 放电' }));
+    expect(onAction).toHaveBeenLastCalledWith({ type: 'setBatteryMode', mode: 'discharge' });
+    await user.click(screen.getByRole('button', { name: 'EV 充电' }));
+    expect(onAction).toHaveBeenLastCalledWith({ type: 'setEvMode', mode: 'charging' });
+    await user.click(screen.getByRole('switch', { name: '允许卖电' }));
+    expect(onAction).toHaveBeenLastCalledWith({ type: 'setGridSell', enabled: true });
+    expect(state.battery.mode).toBe('auto');
+    expect(state.ev.mode).toBe('paused');
+    expect(state.grid.sellEnabled).toBe(false);
+  });
+
+  it('marks the active battery and EV modes with aria-pressed', () => {
+    render(<ControlPanel state={stateAt({ battery: { ...stateAt().battery, mode: 'auto' }, ev: { ...stateAt().ev, mode: 'paused' } })} onAction={vi.fn()} />);
+    expect(screen.getByRole('button', { name: 'Battery 自动' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Battery 充电' })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('button', { name: 'EV 暂停' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'EV 充电' })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('disables both grid switches with a visible reason when grid is closed', () => {
+    render(<ControlPanel state={stateAt({ grid: { buyEnabled: true, sellEnabled: true, available: false } })} onAction={vi.fn()} />);
+    expect(screen.getByRole('switch', { name: '允许买电' })).toBeDisabled();
+    expect(screen.getByRole('switch', { name: '允许卖电' })).toBeDisabled();
+    expect(screen.getByText('电网关闭')).toBeInTheDocument();
+  });
+
+  it('disables buying and explains insufficient money', () => {
+    render(<ControlPanel state={stateAt({ resources: { money: 0, family: 100, score: 0 } })} onAction={vi.fn()} />);
+    expect(screen.getByRole('switch', { name: '允许买电' })).toBeDisabled();
+    expect(screen.getByText('余额不足')).toBeInTheDocument();
+    expect(screen.getByRole('switch', { name: '允许卖电' })).not.toBeDisabled();
+  });
+});

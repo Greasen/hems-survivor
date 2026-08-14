@@ -1,0 +1,88 @@
+import type { BatteryMode, EvMode, GameState, PlayerAction } from '../game/types';
+
+interface ControlPanelProps {
+  state: GameState;
+  onAction: (action: PlayerAction) => void;
+}
+
+const batteryModes: readonly [BatteryMode, string][] = [
+  ['charge', '充电'],
+  ['auto', '自动'],
+  ['discharge', '放电'],
+];
+
+const evModes: readonly [EvMode, string][] = [
+  ['paused', '暂停'],
+  ['charging', '充电'],
+];
+
+export function ControlPanel({ state, onAction }: ControlPanelProps) {
+  const gridUnavailable = !state.grid.available;
+  const buyUnavailable = gridUnavailable || state.resources.money <= 0;
+  const gridReason = gridUnavailable ? '电网关闭' : state.resources.money <= 0 ? '余额不足' : null;
+
+  return (
+    <section className="control-panel" aria-label="能源控制">
+      <fieldset>
+        <legend>Battery 模式</legend>
+        <div role="group" aria-label="Battery 模式">
+          {batteryModes.map(([mode, label]) => (
+            <button
+              key={mode}
+              type="button"
+              aria-label={`Battery ${label}`}
+              aria-pressed={state.battery.mode === mode}
+              onClick={() => onAction({ type: 'setBatteryMode', mode })}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>EV 模式</legend>
+        <div role="group" aria-label="EV 模式">
+          {evModes.map(([mode, label]) => (
+            <button
+              key={mode}
+              type="button"
+              aria-label={`EV ${label}`}
+              aria-pressed={state.ev.mode === mode}
+              onClick={() => onAction({ type: 'setEvMode', mode })}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Grid 控制</legend>
+        <label>
+          <input
+            type="checkbox"
+            role="switch"
+            aria-label="允许买电"
+            checked={state.grid.buyEnabled}
+            disabled={buyUnavailable}
+            onChange={(event) => onAction({ type: 'setGridBuy', enabled: event.target.checked })}
+          />
+          允许买电
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            role="switch"
+            aria-label="允许卖电"
+            checked={state.grid.sellEnabled}
+            disabled={gridUnavailable}
+            onChange={(event) => onAction({ type: 'setGridSell', enabled: event.target.checked })}
+          />
+          允许卖电
+        </label>
+        {gridReason ? <p role="status">{gridReason}</p> : null}
+      </fieldset>
+    </section>
+  );
+}
