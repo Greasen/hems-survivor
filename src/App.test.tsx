@@ -2,6 +2,7 @@ import { act, cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
+import * as gameEngine from './game/engine';
 
 describe('App', () => {
   beforeEach(() => {
@@ -147,5 +148,28 @@ describe('App', () => {
       await user.click(screen.getByRole('button', { name: '重新开始' }));
       expect(screen.getByRole('dialog', { name: '电量守卫' })).toBeInTheDocument();
     }
+  });
+
+  it('contains a controller Tick error, cleans its timer, and recovers to a fresh ready game', async () => {
+    const runTick = vi.spyOn(gameEngine, 'runTick').mockImplementation(() => {
+      throw new Error('broken Tick');
+    });
+    const clearIntervalSpy = vi.spyOn(window, 'clearInterval');
+    const user = setup();
+    render(<App />);
+    await startGame(user);
+
+    act(() => vi.advanceTimersByTime(1_000));
+    expect(screen.getByRole('heading', { name: '游戏状态异常' })).toBeInTheDocument();
+    expect(screen.getByText('游戏已暂停，请重新开始本局。')).toBeInTheDocument();
+    expect(clearIntervalSpy).toHaveBeenCalled();
+    const callsAfterError = runTick.mock.calls.length;
+    expect(callsAfterError).toBeGreaterThan(0);
+
+    act(() => vi.advanceTimersByTime(5_000));
+    expect(runTick).toHaveBeenCalledTimes(callsAfterError);
+    await user.click(screen.getByRole('button', { name: '重新开始' }));
+    expect(screen.getByRole('dialog', { name: '电量守卫' })).toBeInTheDocument();
+    expect(screen.getByText('时间 00:00')).toBeInTheDocument();
   });
 });

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ControlPanel } from './components/ControlPanel';
 import { EnergyBoard } from './components/EnergyBoard';
 import { GameErrorBoundary } from './components/GameErrorBoundary';
@@ -9,7 +10,7 @@ import { StatusBar } from './components/StatusBar';
 import { UpgradeOverlay } from './components/UpgradeOverlay';
 import { useGameController } from './hooks/useGameController';
 
-export default function App() {
+function GameScreen() {
   const game = useGameController();
   const restart = () => game.dispatch({ type: 'restart', seed: Date.now() >>> 0 });
   const pauseOnError = () => game.dispatch({ type: 'pause' });
@@ -34,6 +35,16 @@ export default function App() {
           <ResultOverlay state={game.state} onRestart={restart} />
         )}
       </main>
+    </GameErrorBoundary>
+  );
+}
+
+export default function App() {
+  const [recoveryKey, setRecoveryKey] = useState(0);
+
+  return (
+    <GameErrorBoundary key={recoveryKey} onRestart={() => setRecoveryKey((key) => key + 1)}>
+      <GameScreen />
     </GameErrorBoundary>
   );
 }
