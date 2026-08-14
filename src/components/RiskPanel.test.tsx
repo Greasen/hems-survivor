@@ -1,6 +1,6 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { RiskPanel, getPrimaryRisk } from './RiskPanel';
+import { RiskPanel } from './RiskPanel';
 import { stateAt } from '../test/fixtures';
 
 describe('RiskPanel', () => {
@@ -24,11 +24,11 @@ describe('RiskPanel', () => {
   });
 
   it('shows EV emergency as satisfied and does not report its deadline risk', () => {
-    const state = stateAt({ tick: 64, resources: { money: 0, family: 80, score: 0 }, event: { kind: 'evEmergency', stage: 'active', startsAt: 60, endsAt: 65, allHomeSupplied: true, targetEvLevel: 45 }, ev: { ...stateAt().ev, level: 45 } });
+    const state = stateAt({ tick: 64, event: { kind: 'evEmergency', stage: 'active', startsAt: 60, endsAt: 65, allHomeSupplied: true, targetEvLevel: 45 }, ev: { ...stateAt().ev, level: 45 } });
     render(<RiskPanel state={state} />);
     expect(screen.getByText('已满足')).toBeInTheDocument();
     expect(screen.queryByText('事件即将结束')).not.toBeInTheDocument();
-    expect(screen.getByRole('alert')).toHaveTextContent('余额为零');
+    expect(screen.getByRole('status')).toHaveTextContent('当前风险稳定');
   });
 
   it('shows crisis grid reopen countdown when the current grid is closed', () => {
@@ -36,15 +36,34 @@ describe('RiskPanel', () => {
     expect(screen.getByText('电网将在 10 秒后重新开放')).toBeInTheDocument();
   });
 
-  it.each([
-    ['sustained outage', stateAt({ outageTicks: 10, resources: { money: 0, family: 10, score: 0 }, battery: { ...stateAt().battery, level: 10 } }), '持续断电风险'],
-    ['family', stateAt({ outageTicks: 1, resources: { money: 20, family: 20, score: 0 } }), '家庭满意度即将耗尽'],
-    ['event deadline', stateAt({ event: { kind: 'familyLoad', stage: 'active', startsAt: 60, endsAt: 65, allHomeSupplied: true, targetEvLevel: null }, tick: 64 }), '事件即将结束'],
-    ['money', stateAt({ resources: { money: 0, family: 80, score: 0 } }), '余额为零'],
-    ['battery', stateAt({ battery: { ...stateAt().battery, level: 25 } }), '电池已达储备线'],
-    ['stable', stateAt(), '当前风险稳定'],
-  ])('selects %s by exact priority', (_, state, expected) => {
-    expect(getPrimaryRisk(state)).toBe(expected);
+  it('renders sustained outage above every lower-priority risk', () => {
+    render(<RiskPanel state={stateAt({ outageTicks: 10, resources: { money: 0, family: 20, score: 0 }, battery: { ...stateAt().battery, level: 10 }, event: { kind: 'familyLoad', stage: 'active', startsAt: 60, endsAt: 65, allHomeSupplied: true, targetEvLevel: null }, tick: 64 })} />);
+    expect(screen.getByRole('alert')).toHaveTextContent('持续断电风险');
+  });
+
+  it('renders family risk above deadline, money, and battery risks', () => {
+    render(<RiskPanel state={stateAt({ outageTicks: 1, resources: { money: 0, family: 20, score: 0 }, battery: { ...stateAt().battery, level: 25 }, event: { kind: 'familyLoad', stage: 'active', startsAt: 60, endsAt: 65, allHomeSupplied: true, targetEvLevel: null }, tick: 64 })} />);
+    expect(screen.getByRole('alert')).toHaveTextContent('家庭满意度即将耗尽');
+  });
+
+  it('renders an unsatisfied event deadline above money and battery risks', () => {
+    render(<RiskPanel state={stateAt({ resources: { money: 0, family: 80, score: 0 }, battery: { ...stateAt().battery, level: 25 }, event: { kind: 'familyLoad', stage: 'active', startsAt: 60, endsAt: 65, allHomeSupplied: true, targetEvLevel: null }, tick: 64 })} />);
+    expect(screen.getByRole('alert')).toHaveTextContent('事件即将结束');
+  });
+
+  it('renders money risk above battery reserve risk', () => {
+    render(<RiskPanel state={stateAt({ resources: { money: 0, family: 80, score: 0 }, battery: { ...stateAt().battery, level: 25 } })} />);
+    expect(screen.getByRole('alert')).toHaveTextContent('余额为零');
+  });
+
+  it('renders battery reserve risk as an alert', () => {
+    render(<RiskPanel state={stateAt({ battery: { ...stateAt().battery, level: 25 } })} />);
+    expect(screen.getByRole('alert')).toHaveTextContent('电池已达储备线');
+  });
+
+  it('renders stable risk as a status', () => {
+    render(<RiskPanel state={stateAt()} />);
+    expect(screen.getByRole('status')).toHaveTextContent('当前风险稳定');
   });
 
   it('exposes risk text semantically instead of relying on color', () => {
