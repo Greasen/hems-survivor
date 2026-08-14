@@ -1,5 +1,36 @@
 import type { GameConfig } from './types';
 
+function invalid(path: string, message: string): never {
+  throw new Error(`Invalid config: ${path} ${message}`);
+}
+
+function finite(path: string, value: number): void {
+  if (!Number.isFinite(value)) invalid(path, 'must be finite');
+}
+
+function nonNegative(path: string, value: number): void {
+  finite(path, value);
+  if (value < 0) invalid(path, 'must be non-negative');
+}
+
+function integer(path: string, value: number): void {
+  finite(path, value);
+  if (!Number.isInteger(value)) invalid(path, 'must be an integer');
+}
+
+function bounded(path: string, value: number, min: number, max: number): void {
+  finite(path, value);
+  if (value < min || value > max) invalid(path, `must be between ${min} and ${max}`);
+}
+
+function range(path: string, values: { min: number; max: number }, options: { nonNegative?: boolean } = {}): void {
+  if (options.nonNegative) nonNegative(`${path}.min`, values.min);
+  else finite(`${path}.min`, values.min);
+  if (options.nonNegative) nonNegative(`${path}.max`, values.max);
+  else finite(`${path}.max`, values.max);
+  if (values.min > values.max) invalid(path, 'min must not exceed max');
+}
+
 export const standardConfig: GameConfig = {
   tickMs: 1000,
   durationTicks: 360,
@@ -50,3 +81,88 @@ export const acceleratedConfig: GameConfig = {
   ...standardConfig,
   tickMs: 10,
 };
+
+/** Validate immutable game rules at a public orchestration boundary. */
+export function assertValidConfig(config: GameConfig): void {
+  finite('tickMs', config.tickMs);
+  if (config.tickMs <= 0) invalid('tickMs', 'must be greater than 0');
+  integer('durationTicks', config.durationTicks);
+  if (config.durationTicks <= 0) invalid('durationTicks', 'must be greater than 0');
+  integer('crisisStartTick', config.crisisStartTick);
+  if (config.crisisStartTick <= 0 || (config.crisisStartTick >= config.durationTicks && config.phase?.at(-1)?.to === config.durationTicks - 1)) {
+    invalid('crisisStartTick', `must be between 1 and ${config.durationTicks - 1}`);
+  }
+
+  const upgradeTicks = config.upgradeTicks;
+  if (new Set(upgradeTicks).size !== upgradeTicks.length) invalid('upgradeTicks', 'must not contain duplicates');
+  upgradeTicks.forEach((tick, index) => {
+    integer(`upgradeTicks[${index}]`, tick);
+    const hasTailPhase = config.phase?.at(-1)?.to !== config.durationTicks - 1;
+    if (tick <= 0 || (tick > config.durationTicks && !hasTailPhase)) invalid(`upgradeTicks[${index}]`, 'is outside the run');
+  });
+
+  finite('battery.capacity', config.battery.capacity);
+  if (config.battery.capacity <= 0) invalid('battery.capacity', 'must be greater than 0');
+  bounded('battery.initial', config.battery.initial, 0, config.battery.capacity);
+  nonNegative('battery.chargePower', config.battery.chargePower);
+  nonNegative('battery.dischargePower', config.battery.dischargePower);
+  bounded('battery.autoReserve', config.battery.autoReserve, 0, config.battery.capacity);
+
+  finite('ev.capacity', config.ev.capacity);
+  if (config.ev.capacity <= 0) invalid('ev.capacity', 'must be greater than 0');
+  bounded('ev.initial', config.ev.initial, 0, config.ev.capacity);
+  nonNegative('ev.chargePower', config.ev.chargePower);
+
+  nonNegative('resources.money', config.resources.money);
+  bounded('resources.family', config.resources.family, 0, 100);
+  nonNegative('resources.score', config.resources.score);
+
+  nonNegative('grid.buyPower', config.grid.buyPower);
+  nonNegative('grid.sellPower', config.grid.sellPower);
+  nonNegative('grid.buyPrice', config.grid.buyPrice);
+  nonNegative('grid.sellPrice', config.grid.sellPrice);
+
+  bounded('family.outageLoss', config.family.outageLoss, 0, 100);
+  integer('family.stableRecoveryTicks', config.family.stableRecoveryTicks);
+  if (config.family.stableRecoveryTicks <= 0) invalid('family.stableRecoveryTicks', 'must be greater than 0');
+  bounded('family.stableRecovery', config.family.stableRecovery, 0, 100);
+  integer('family.sustainedOutageTicks', config.family.sustainedOutageTicks);
+  if (config.family.sustainedOutageTicks <= 0 || config.family.sustainedOutageTicks > config.durationTicks) {
+    invalid('family.sustainedOutageTicks', 'is outside the run bounds');
+  }
+
+  const scoreEntries: Array<[string, number]> = Object.entries(config.score) as Array<[string, number]>;
+  for (const [path, value] of scoreEntries) nonNegative(`score.${path}`, value);
+
+  range('random.solar', config.random && { min: config.random.solarMin, max: config.random.solarMax });
+  range('random.home', { min: config.random.homeMin, max: config.random.homeMax });
+  range('eventCooldown.learning', { min: config.eventCooldown.learningMin, max: config.eventCooldown.learningMax }, { nonNegative: true });
+  range('eventCooldown.pressure', { min: config.eventCooldown.pressureMin, max: config.eventCooldown.pressureMax }, { nonNegative: true });
+
+  for (const kind of ['cloudy', 'peakPrice', 'familyLoad', 'evEmergency'] as const) {
+    integer(`events.${kind}.warning`, config.events[kind].warning);
+    nonNegative(`events.${kind}.warning`, config.events[kind].warning);
+    integer(`events.${kind}.duration`, config.events[kind].duration);
+    if (config.events[kind].duration <= 0) invalid(`events.${kind}.duration`, 'must be greater than 0');
+  }
+
+  const effectEntries: Array<[string, number]> = Object.entries(config.eventEffects) as Array<[string, number]>;
+  for (const [path, value] of effectEntries) nonNegative(`eventEffects.${path}`, value);
+  const upgradeEntries: Array<[string, number]> = Object.entries(config.upgrades) as Array<[string, number]>;
+  for (const [path, value] of upgradeEntries) nonNegative(`upgrades.${path}`, value);
+
+  if (!Array.isArray(config.phase) || config.phase.length === 0) invalid('phase', 'must not be empty');
+  let expectedFrom = 0;
+  config.phase.forEach((phase, index) => {
+    const path = `phase[${index}]`;
+    if (typeof phase.name !== 'string' || phase.name.trim() === '') invalid(`${path}.name`, 'must not be empty');
+    integer(`${path}.from`, phase.from);
+    integer(`${path}.to`, phase.to);
+    if (phase.from !== expectedFrom) invalid(`${path}.from`, `must be ${expectedFrom} for a contiguous timeline`);
+    if (phase.to < phase.from) invalid(`${path}.to`, 'must not precede from');
+    nonNegative(`${path}.solar`, phase.solar);
+    nonNegative(`${path}.home`, phase.home);
+    expectedFrom = phase.to + 1;
+  });
+  if (expectedFrom <= config.durationTicks - 1) invalid('phase', `must cover ticks 0..${config.durationTicks - 1}`);
+}

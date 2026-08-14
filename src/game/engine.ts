@@ -14,7 +14,7 @@ import type {
   TickEnvironment,
   TickReport,
 } from './types';
-import { standardConfig } from './config';
+import { assertValidConfig, standardConfig } from './config';
 
 export interface EnvironmentResult {
   environment: TickEnvironment;
@@ -150,6 +150,8 @@ export function appendKeyMoments(existing: ReasonEntry[], reasons: ReasonEntry[]
 }
 
 export function runTick(input: GameState, config: GameConfig = standardConfig): GameState {
+  assertValidConfig(config);
+  assertValidState(input, config);
   if (input.status !== 'running') return input;
   const nextTick = input.tick + 1;
   const eventBefore = input.event ? structuredClone(input.event) : null;
@@ -192,37 +194,43 @@ export function runTick(input: GameState, config: GameConfig = standardConfig): 
     state.keyMoments = appendKeyMoments(state.keyMoments, [upgradeReason], 20);
   }
   // Keep the assertion at the orchestration boundary so every module composition is checked.
-  assertValidState(state);
+  assertValidState(state, config);
   return state;
 }
 
 export function dispatchAction(state: GameState, action: PlayerAction, config: GameConfig = standardConfig): GameState {
-  if (action.type === 'restart') return createInitialState(action.seed, config);
-  if (action.type === 'start') return state.status === 'ready' ? { ...state, status: 'running' } : state;
-  if (action.type === 'pause') return state.status === 'running' ? { ...state, status: 'paused' } : state;
-  if (action.type === 'resume') return state.status === 'paused' ? { ...state, status: 'running' } : state;
+  assertValidConfig(config);
+  assertValidState(state, config);
+  const finish = (next: GameState): GameState => {
+    assertValidState(next, config);
+    return next;
+  };
+  if (action.type === 'restart') return finish(createInitialState(action.seed, config));
+  if (action.type === 'start') return finish(state.status === 'ready' ? { ...state, status: 'running' } : state);
+  if (action.type === 'pause') return finish(state.status === 'running' ? { ...state, status: 'paused' } : state);
+  if (action.type === 'resume') return finish(state.status === 'paused' ? { ...state, status: 'running' } : state);
   if (state.status === 'choosingUpgrade' && action.type === 'chooseUpgrade') {
-    if (!state.pendingUpgrades.includes(action.upgrade)) return state;
+    if (!state.pendingUpgrades.includes(action.upgrade)) return finish(state);
     const upgraded = applyUpgrade(state, action.upgrade, config);
-    return {
+    return finish({
       ...upgraded,
       status: 'running',
       pendingUpgrades: [],
       keyMoments: appendKeyMoments(upgraded.keyMoments, [reason(`upgradeSelected:${action.upgrade}`, state.tick)], 20),
-    };
+    });
   }
-  if (state.status !== 'running') return state;
+  if (state.status !== 'running') return finish(state);
 
   switch (action.type) {
     case 'setBatteryMode':
-      return { ...state, battery: { ...state.battery, mode: action.mode } };
+      return finish({ ...state, battery: { ...state.battery, mode: action.mode } });
     case 'setEvMode':
-      return { ...state, ev: { ...state.ev, mode: action.mode } };
+      return finish({ ...state, ev: { ...state.ev, mode: action.mode } });
     case 'setGridBuy':
-      return { ...state, grid: { ...state.grid, buyEnabled: action.enabled } };
+      return finish({ ...state, grid: { ...state.grid, buyEnabled: action.enabled } });
     case 'setGridSell':
-      return { ...state, grid: { ...state.grid, sellEnabled: action.enabled } };
+      return finish({ ...state, grid: { ...state.grid, sellEnabled: action.enabled } });
     default:
-      return state;
+      return finish(state);
   }
 }
