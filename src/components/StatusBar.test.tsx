@@ -9,15 +9,15 @@ describe('StatusBar', () => {
   it('shows the formatted time and resource values', () => {
     render(
       <StatusBar
-        state={stateAt({ tick: 65, resources: { money: 120, family: 100, score: 7 } })}
+        state={stateAt({ tick: 65, resources: { money: 119.5, family: 98, score: 7.6 } })}
         onPause={vi.fn()}
       />,
     );
 
     expect(screen.getByText('时间 01:05')).toBeInTheDocument();
-    expect(screen.getByText('Money 120')).toBeInTheDocument();
-    expect(screen.getByLabelText('家庭满意度')).toHaveTextContent('100');
-    expect(screen.getByText('Score 7')).toBeInTheDocument();
+    expect(screen.getByText('Money 119.5')).toBeInTheDocument();
+    expect(screen.getByLabelText('家庭满意度')).toHaveTextContent('98.0');
+    expect(screen.getByText('Score 8')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '暂停游戏' })).toBeInTheDocument();
   });
 

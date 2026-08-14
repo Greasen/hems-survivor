@@ -20,15 +20,15 @@ export function StatusBar({ state, onPause }: StatusBarProps) {
         <span>时间 {formatTime(state.tick)}</span>
       </div>
       <div className="status-bar__item">
-        <span>Money {money}</span>
+        <span>Money {money.toFixed(1)}</span>
       </div>
       <label className="status-bar__item" aria-label="家庭满意度">
         <span>Family</span>
         <meter min={0} max={100} value={family} />
-        <strong>{family}</strong>
+        <strong>{family.toFixed(1)}</strong>
       </label>
       <div className="status-bar__item">
-        <span>Score {score}</span>
+        <span>Score {Math.round(score)}</span>
       </div>
       <button type="button" onClick={onPause} aria-label="暂停游戏">
         暂停
