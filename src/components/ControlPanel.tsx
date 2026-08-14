@@ -19,6 +19,8 @@ const evModes: readonly [EvMode, string][] = [
   ['charging', '充电'],
 ];
 
+const gridReasonId = 'grid-control-reason';
+
 export function ControlPanel({ state, onAction, config = standardConfig }: ControlPanelProps) {
   const gridUnavailable = !state.grid.available;
   const buyUnavailable = gridUnavailable || state.resources.money <= 0;
@@ -72,6 +74,7 @@ export function ControlPanel({ state, onAction, config = standardConfig }: Contr
             aria-label="允许买电"
             checked={state.grid.buyEnabled}
             disabled={buyUnavailable}
+            aria-describedby={gridReason ? gridReasonId : undefined}
             onChange={(event) => onAction({ type: 'setGridBuy', enabled: event.target.checked })}
           />
           允许买电
@@ -83,11 +86,12 @@ export function ControlPanel({ state, onAction, config = standardConfig }: Contr
             aria-label="允许卖电"
             checked={state.grid.sellEnabled}
             disabled={gridUnavailable}
+            aria-describedby={gridReason ? gridReasonId : undefined}
             onChange={(event) => onAction({ type: 'setGridSell', enabled: event.target.checked })}
           />
           允许卖电
         </label>
-        {gridReason ? <p className="disabled-reason" role="status">{gridReason}</p> : null}
+        {gridReason ? <p id={gridReasonId} className="disabled-reason">{gridReason}</p> : null}
       </fieldset>
     </section>
   );

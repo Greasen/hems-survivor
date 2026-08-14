@@ -54,6 +54,11 @@ button:disabled { color: var(--muted); opacity: 0.62; }
 .energy-card--ev { border-color: var(--ev); }
 .energy-card--grid { border-color: var(--grid); }
 .energy-flows { grid-column: 1 / -1; margin: 0; padding: 8px 10px 8px 28px; color: var(--muted); font-size: 12px; }
+.energy-upgrades { grid-column: 1 / -1; min-width: 0; padding: 8px 10px; border: 1px solid var(--border); border-radius: 12px; background: color-mix(in srgb, var(--surface) 92%, transparent); }
+.energy-upgrades h2, .energy-upgrades p { margin: 0; }
+.energy-upgrades h2 { font-size: 14px; line-height: 1.2; }
+.energy-upgrades ul { margin: 4px 0 0; padding-left: 20px; color: var(--muted); font-size: 12px; }
+.energy-upgrades li + li { margin-top: 4px; }
 .risk-panel { display: grid; gap: 4px; padding: 8px 10px; border-radius: 12px; background: var(--surface); border-left: 4px solid var(--home); }
 .risk-panel h2, .risk-panel p { margin: 0; }
 .risk-panel h2 { font-size: 14px; line-height: 1.2; }

@@ -60,6 +60,25 @@ test('plays, pauses, upgrades, and restarts without horizontal overflow', async 
   const upgradeDialog = page.getByRole('dialog', { name: '选择升级' });
   await expect(upgradeDialog.getByRole('button').first()).toBeFocused();
   await upgradeDialog.getByRole('button').first().click();
+  await expect(page.locator('.energy-upgrades')).toBeVisible();
+  const upgradeGeometry = await page.locator('.energy-upgrades').evaluate((element) => {
+    const board = element.closest('.energy-board') as HTMLElement | null;
+    if (!board) throw new Error('energy board is required');
+    const boardRect = board.getBoundingClientRect();
+    const upgradeRect = element.getBoundingClientRect();
+    const widthRatio = upgradeRect.width / board.clientWidth;
+    board.scrollTop = board.scrollHeight;
+    const scrolledRect = element.getBoundingClientRect();
+    return {
+      widthRatio,
+      scrollable: board.scrollHeight > board.clientHeight,
+      visibleAfterInternalScroll: scrolledRect.bottom >= boardRect.top && scrolledRect.top <= boardRect.bottom,
+    };
+  });
+  expect(upgradeGeometry.widthRatio).toBeGreaterThan(0.95);
+  expect(upgradeGeometry.scrollable).toBe(true);
+  expect(upgradeGeometry.visibleAfterInternalScroll).toBe(true);
+  await expectCoreControlsInViewport(page);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(0);
 });

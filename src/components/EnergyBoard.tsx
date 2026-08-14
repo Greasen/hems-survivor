@@ -1,8 +1,12 @@
-import type { GameState, FlowNode } from '../game/types';
-import { upgradeText } from '../game/upgrades';
+import type { GameConfig, GameState, FlowNode } from '../game/types';
+import { standardConfig } from '../game/config';
+import { upgradeEffectText, upgradeText } from '../game/upgrades';
+
+export { upgradeEffectText } from '../game/upgrades';
 
 interface EnergyBoardProps {
   state: GameState;
+  config?: GameConfig;
 }
 
 const labels: Record<FlowNode, string> = {
@@ -16,7 +20,7 @@ const labels: Record<FlowNode, string> = {
 
 const formatValue = (value: number): string => (Math.round((value + Number.EPSILON) * 10) / 10).toFixed(1);
 
-export function EnergyBoard({ state }: EnergyBoardProps) {
+export function EnergyBoard({ state, config = standardConfig }: EnergyBoardProps) {
   const report = state.lastReport;
   const solar = report?.solar;
   const home = report?.home;
@@ -62,11 +66,11 @@ export function EnergyBoard({ state }: EnergyBoardProps) {
         </ul>
       ) : null}
       {state.selectedUpgrades.length > 0 ? (
-        <section className="energy-upgrades" aria-label="已选升级效果">
+        <section className="energy-upgrades" data-grid-span="full" aria-label="已选升级效果">
           <h2>已选升级</h2>
           <ul>
             {state.selectedUpgrades.map((upgrade) => (
-              <li key={upgrade}><span>{upgradeText[upgrade].name}</span><p>{upgradeText[upgrade].description}</p></li>
+              <li key={upgrade}><span>{upgradeText[upgrade].name}</span><p>{upgradeEffectText(upgrade, config)}</p></li>
             ))}
           </ul>
         </section>

@@ -19,6 +19,28 @@ export const upgradeText: Record<UpgradeId, { name: string; description: string 
   grid_contract: { name: '电网合约', description: '买价 -15%，卖价 +15%' },
 };
 
+function formatUpgradeNumber(value: number): string {
+  return Number.isInteger(value) ? String(value) : String(Number(value.toFixed(2)));
+}
+
+/** Render an upgrade's actual configured effect for the live status board. */
+export function upgradeEffectText(upgrade: UpgradeId, config: GameConfig): string {
+  switch (upgrade) {
+    case 'battery_capacity':
+      return `Battery 容量 +${formatUpgradeNumber(config.upgrades.batteryCapacity)}，当前电量 +${formatUpgradeNumber(config.upgrades.batteryInitialBonus)}`;
+    case 'battery_power':
+      return `Battery 充放电功率各 +${formatUpgradeNumber(config.upgrades.batteryPower)}`;
+    case 'solar_optimizer':
+      return `Solar 输出永久 +${formatUpgradeNumber((config.upgrades.solarMultiplier - 1) * 100)}%`;
+    case 'home_efficiency':
+      return `Home 负载永久 -${formatUpgradeNumber((1 - config.upgrades.homeMultiplier) * 100)}%`;
+    case 'ev_fast_charge':
+      return `EV 充电功率 +${formatUpgradeNumber(config.upgrades.evPower)}`;
+    case 'grid_contract':
+      return `买价 -${formatUpgradeNumber((1 - config.upgrades.gridBuyMultiplier) * 100)}%，卖价 +${formatUpgradeNumber((config.upgrades.gridSellMultiplier - 1) * 100)}%`;
+  }
+}
+
 export function hasUpgrade(state: GameState, upgrade: UpgradeId): boolean {
   return state.selectedUpgrades.includes(upgrade);
 }

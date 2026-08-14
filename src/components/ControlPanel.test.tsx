@@ -89,4 +89,14 @@ describe('ControlPanel', () => {
     render(<ControlPanel state={stateAt({ tick: 211, grid: { buyEnabled: true, sellEnabled: true, available: false } })} onAction={vi.fn()} config={config} />);
     expect(screen.getByText('电网将在 10 秒后重新开放')).toBeInTheDocument();
   });
+
+  it('associates closed-grid explanation with both switches without a live status role', () => {
+    render(<ControlPanel state={stateAt({ tick: 311, grid: { buyEnabled: true, sellEnabled: true, available: false } })} onAction={vi.fn()} />);
+    const reason = screen.getByText('电网将在 10 秒后重新开放');
+    expect(reason).not.toHaveAttribute('role');
+    expect(reason).toHaveAttribute('id');
+    const reasonId = reason.getAttribute('id');
+    expect(screen.getByRole('switch', { name: '允许买电' })).toHaveAttribute('aria-describedby', reasonId);
+    expect(screen.getByRole('switch', { name: '允许卖电' })).toHaveAttribute('aria-describedby', reasonId);
+  });
 });

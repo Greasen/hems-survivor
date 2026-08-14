@@ -2,6 +2,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { EnergyBoard } from './EnergyBoard';
 import { stateAt } from '../test/fixtures';
+import { standardConfig } from '../game/config';
 
 describe('EnergyBoard', () => {
   afterEach(cleanup);
@@ -66,5 +67,26 @@ describe('EnergyBoard', () => {
     expect(screen.getByLabelText('Battery 电量')).toHaveTextContent('充电功率 1.4');
     expect(screen.getByLabelText('Battery 电量')).toHaveTextContent('放电功率 1.4');
     expect(screen.getByLabelText('EV 电量')).toHaveTextContent('充电功率 0.9');
+  });
+
+  it('uses runtime config values when rendering selected upgrade effects', () => {
+    const config = {
+      ...standardConfig,
+      upgrades: { ...standardConfig.upgrades, batteryCapacity: 40, batteryInitialBonus: 7, batteryPower: 0.5, evPower: 0.4 },
+    };
+    render(<EnergyBoard state={stateAt({ selectedUpgrades: ['battery_capacity', 'battery_power', 'ev_fast_charge'] })} config={config} />);
+    expect(screen.getByText('Battery 容量 +40，当前电量 +7')).toBeInTheDocument();
+    expect(screen.getByText('Battery 充放电功率各 +0.5')).toBeInTheDocument();
+    expect(screen.getByText('EV 充电功率 +0.4')).toBeInTheDocument();
+    expect(screen.queryByText('Battery 容量 +25，当前电量 +10')).not.toBeInTheDocument();
+  });
+
+  it('places selected upgrades across the full energy board width', () => {
+    const { container } = render(<EnergyBoard state={stateAt({ selectedUpgrades: ['battery_power'] })} />);
+    const board = container.querySelector('.energy-board');
+    const upgrades = container.querySelector('.energy-upgrades');
+    expect(board).toBeInTheDocument();
+    expect(upgrades).toHaveClass('energy-upgrades');
+    expect(upgrades).toHaveAttribute('data-grid-span', 'full');
   });
 });

@@ -43,9 +43,9 @@ describe('RiskPanel', () => {
     expect(screen.getByText('电网将在 10 秒后重新开放')).toBeInTheDocument();
   });
 
-  it('renders sustained outage above every lower-priority risk', () => {
+  it('renders family depletion above outage when both risks are present', () => {
     render(<RiskPanel state={stateAt({ outageTicks: 10, resources: { money: 0, family: 20, score: 0 }, battery: { ...stateAt().battery, level: 10 }, event: { kind: 'familyLoad', stage: 'active', startsAt: 60, endsAt: 65, allHomeSupplied: true, targetEvLevel: null }, tick: 64 })} />);
-    expect(screen.getByRole('alert')).toHaveTextContent('持续断电风险');
+    expect(screen.getByRole('alert')).toHaveTextContent('家庭满意度即将耗尽');
   });
 
   it('renders family risk above deadline, money, and battery risks', () => {
@@ -89,9 +89,9 @@ describe('RiskPanel', () => {
   it('shows the exact sustained-outage countdown for every positive outage tick', () => {
     const config = { ...standardConfig, family: { ...standardConfig.family, sustainedOutageTicks: 10, }, battery: { ...standardConfig.battery, autoReserve: 40 } };
     const { rerender } = render(<RiskPanel state={stateAt({ outageTicks: 1 })} config={config} />);
-    expect(screen.getByRole('alert')).toHaveTextContent('距持续断电失败 9 秒');
+    expect(screen.getByText('距持续断电失败 9 秒')).toHaveAttribute('aria-hidden', 'true');
     rerender(<RiskPanel state={stateAt({ outageTicks: 9 })} config={config} />);
-    expect(screen.getByRole('alert')).toHaveTextContent('距持续断电失败 1 秒');
+    expect(screen.getByText('距持续断电失败 1 秒')).toHaveAttribute('aria-hidden', 'true');
   });
 
   it('uses custom reserve and crisis thresholds', () => {
@@ -117,5 +117,35 @@ describe('RiskPanel', () => {
     rerender(<RiskPanel state={stateAt({ keyMoments: [{ code: 'upgradeSelected:battery_power', tick: 125 }] })} />);
     expect(screen.getByLabelText('最近反馈')).toHaveTextContent('已选择升级：高功率逆变器');
     expect(screen.getByLabelText('最近反馈')).not.toHaveTextContent('upgradeSelected');
+  });
+
+  it('prioritizes family depletion above the outage countdown', () => {
+    render(<RiskPanel state={stateAt({ outageTicks: 1, resources: { money: 80, family: 20, score: 0 } })} />);
+    expect(screen.getByRole('alert')).toHaveTextContent('家庭满意度即将耗尽');
+    expect(screen.getByText('距持续断电失败 9 秒')).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('uses a stable outage alert while hiding changing countdown numbers from assistive announcements', () => {
+    render(<RiskPanel state={stateAt({ outageTicks: 1 })} />);
+    expect(screen.getByRole('alert')).toHaveTextContent('持续断电风险，请立即恢复供电');
+    expect(screen.getByRole('alert')).not.toHaveTextContent('距持续断电失败');
+    expect(screen.getByText('距持续断电失败 9 秒')).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('selects the outcome milestone over ending and upgrade milestones on the same tick', () => {
+    const { rerender } = render(<RiskPanel state={stateAt({ keyMoments: [
+      { code: 'eventEnded:familyLoad', tick: 100 },
+      { code: 'eventSuccess:familyLoad', tick: 100 },
+      { code: 'upgradeSelected:battery_power', tick: 100 },
+    ] })} />);
+    expect(screen.getByLabelText('最近反馈')).toHaveTextContent('家庭负载上升成功');
+    expect(screen.getByLabelText('最近反馈')).not.toHaveTextContent('eventSuccess');
+    rerender(<RiskPanel state={stateAt({ keyMoments: [
+      { code: 'eventEnded:evEmergency', tick: 101 },
+      { code: 'eventFailure:evEmergency', tick: 101 },
+      { code: 'upgradeSelected:ev_fast_charge', tick: 101 },
+    ] })} />);
+    expect(screen.getByLabelText('最近反馈')).toHaveTextContent('EV 紧急出行未完成');
+    expect(screen.getByLabelText('最近反馈')).not.toHaveTextContent('eventFailure');
   });
 });
