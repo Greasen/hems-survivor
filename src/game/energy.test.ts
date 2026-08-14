@@ -94,4 +94,28 @@ describe('settleEnergy', () => {
     settleEnergy(before, standardConfig, { solar: 0, home: 2, buyPrice: 1, sellPrice: 0.6 });
     expect(before).toEqual(snapshot);
   });
+
+  it('drops sub-EPSILON solar remainder without creating a flow or storage', () => {
+    const state = stateAt({ battery: { level: 60, capacity: 100, chargePower: 1, dischargePower: 1, mode: 'auto' } });
+    const result = settleEnergy(state, standardConfig, { solar: 1 + 0.0000005, home: 1, buyPrice: 1, sellPrice: 0.6 });
+    expect(result.flows).not.toContainEqual({ from: 'solar', to: 'battery', amount: 0.0000005 });
+    expect(result.state.battery.level).toBe(60);
+    expect(result.curtailed).toBe(0);
+  });
+
+  it('drops sub-EPSILON affordable Grid energy consistently', () => {
+    const state = stateAt({ resources: { money: 0.000002, family: 100, score: 0 }, battery: { level: 0, capacity: 100, chargePower: 1, dischargePower: 1, mode: 'auto' } });
+    const result = settleEnergy(state, standardConfig, { solar: 0, home: 1, buyPrice: 4, sellPrice: 0.6 });
+    expect(result.flows).not.toContainEqual({ from: 'grid', to: 'home', amount: 0.0000005 });
+    expect(result.bought).toBe(0);
+    expect(result.state.resources.money).toBe(0.000002);
+    expect(result.unmetHome).toBe(1);
+  });
+
+  it('transfers energy just above EPSILON normally', () => {
+    const amount = 0.0000015;
+    const result = settleEnergy(stateAt({ battery: { level: 60, capacity: 100, chargePower: 1, dischargePower: 1, mode: 'auto' } }), standardConfig, { solar: 1 + amount, home: 1, buyPrice: 1, sellPrice: 0.6 });
+    expect(result.flows).toContainEqual({ from: 'solar', to: 'battery', amount: expect.closeTo(amount, 1e-12) });
+    expect(result.state.battery.level).toBeCloseTo(60 + amount, 12);
+  });
 });
