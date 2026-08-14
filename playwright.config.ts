@@ -13,7 +13,7 @@ export default defineConfig({
     baseURL: 'http://127.0.0.1:4173',
   },
   projects: [
-    { name: 'pixel-5-360', use: { ...devices['Pixel 5'], viewport: { width: 360, height: 800 } } },
-    { name: 'pixel-5-390', use: { ...devices['Pixel 5'], viewport: { width: 390, height: 844 } } },
+    { name: 'mobile-360', use: { ...devices['Pixel 5'], viewport: { width: 360, height: 800 } } },
+    { name: 'mobile-390', use: { ...devices['Pixel 5'], viewport: { width: 390, height: 844 } } },
   ],
 });
