@@ -28,9 +28,10 @@ function unique(path: string, values: readonly (string | number)[]): void {
   if (new Set(values).size !== values.length) invalid(path, 'must not contain duplicates');
 }
 
-function validateReason(path: string, entry: { code: string; tick: number; amount?: number }): void {
+function validateReason(path: string, entry: { code: string; tick: number; amount?: number }, maxTick: number): void {
   if (typeof entry.code !== 'string' || entry.code.trim() === '') invalid(`${path}.code`, 'must not be empty');
   integer(`${path}.tick`, entry.tick);
+  if (entry.tick < 0 || entry.tick > maxTick) invalid(`${path}.tick`, `must be between 0 and ${maxTick}`);
   if (entry.amount !== undefined) finite(`${path}.amount`, entry.amount);
 }
 
@@ -110,15 +111,18 @@ export function assertValidState(state: GameState, config: GameConfig = standard
     integer('event.startsAt', state.event.startsAt);
     integer('event.endsAt', state.event.endsAt);
     if (state.event.startsAt < 0) invalid('event.startsAt', 'must be non-negative');
-    const permitsTailPhase = config.phase.at(-1)?.to !== config.durationTicks - 1;
-    if (state.event.endsAt > config.durationTicks && !permitsTailPhase) invalid('event.endsAt', 'exceeds duration');
+    if (state.event.endsAt > config.durationTicks) invalid('event.endsAt', 'exceeds duration');
     if (state.event.startsAt >= state.event.endsAt) invalid('event.startsAt', 'must precede endsAt');
+    if (state.event.stage === 'warning' && state.tick >= state.event.startsAt) invalid('event.startsAt', 'must be after the warning state tick');
+    if (state.event.stage === 'active' && (state.tick < state.event.startsAt || state.tick >= state.event.endsAt)) invalid('event', 'active bounds must contain state.tick');
     if (typeof state.event.allHomeSupplied !== 'boolean') invalid('event.allHomeSupplied', 'must be boolean');
     if (state.event.targetEvLevel !== null) {
       if (state.event.kind !== 'evEmergency') invalid('event.targetEvLevel', 'is only valid for evEmergency');
       finite('event.targetEvLevel', state.event.targetEvLevel);
       if (state.event.targetEvLevel < 0 || state.event.targetEvLevel > state.ev.capacity) invalid('event.targetEvLevel', 'is outside EV capacity');
     }
+    if (state.event.kind === 'evEmergency' && state.event.stage === 'active' && state.event.targetEvLevel === null) invalid('event.targetEvLevel', 'is required while evEmergency is active');
+    if (state.event.stage === 'warning' && state.event.targetEvLevel !== null) invalid('event.targetEvLevel', 'must be null while warning');
   }
   if (state.nextEventWarningAt !== null) {
     integer('nextEventWarningAt', state.nextEventWarningAt);
@@ -137,14 +141,21 @@ export function assertValidState(state: GameState, config: GameConfig = standard
   state.triggeredUpgradeTicks.forEach((tick, index) => {
     integer(`triggeredUpgradeTicks[${index}]`, tick);
     if (!config.upgradeTicks.includes(tick)) invalid(`triggeredUpgradeTicks[${index}]`, 'is not configured');
+    if (tick > state.tick) invalid(`triggeredUpgradeTicks[${index}]`, 'cannot be in the future');
   });
 
   if (state.gameOverReason !== null) oneOf('gameOverReason', state.gameOverReason, ['familyDepleted', 'sustainedOutage']);
+  if (state.status === 'gameOver' && state.gameOverReason === null) invalid('gameOverReason', 'is required for gameOver');
+  if (state.status !== 'gameOver' && state.gameOverReason !== null) invalid('gameOverReason', 'requires gameOver status');
+  if (state.status === 'choosingUpgrade' && state.pendingUpgrades.length !== 3) invalid('pendingUpgrades', 'must contain exactly 3 choices while choosingUpgrade');
+  if (state.status !== 'choosingUpgrade' && state.pendingUpgrades.length !== 0) invalid('pendingUpgrades', 'must be empty outside choosingUpgrade');
 
   if (state.lastReport) {
     integer('lastReport.tick', state.lastReport.tick);
     if (state.lastReport.tick !== state.tick) invalid('lastReport.tick', 'must match state.tick');
-    if (typeof state.lastReport.phase !== 'string' || state.lastReport.phase.trim() === '') invalid('lastReport.phase', 'must not be empty');
+    oneOf('lastReport.phase', state.lastReport.phase, ['safe', 'learning', 'pressure', 'crisis']);
+    if (state.lastReport.outageTicks !== state.outageTicks) invalid('lastReport.outageTicks', 'must match state.outageTicks');
+    if (state.lastReport.outageTicks > state.tick) invalid('lastReport.outageTicks', 'must not exceed state.tick');
     for (const field of ['solar', 'home', 'buyPrice', 'sellPrice', 'unmetHome', 'outageTicks', 'curtailed'] as const) {
       if (field === 'outageTicks') integer(`lastReport.${field}`, state.lastReport[field]);
       else nonNegative(`lastReport.${field}`, state.lastReport[field]);
@@ -154,7 +165,7 @@ export function assertValidState(state: GameState, config: GameConfig = standard
       oneOf(`lastReport.flows[${index}].to`, flow.to, ['solar', 'home', 'battery', 'ev', 'grid', 'curtailed']);
       nonNegative(`lastReport.flows[${index}].amount`, flow.amount);
     });
-    state.lastReport.reasons.forEach((entry, index) => validateReason(`lastReport.reasons[${index}]`, entry));
+    state.lastReport.reasons.forEach((entry, index) => validateReason(`lastReport.reasons[${index}]`, entry, state.tick));
   }
-  state.keyMoments.forEach((entry, index) => validateReason(`keyMoments[${index}]`, entry));
+  state.keyMoments.forEach((entry, index) => validateReason(`keyMoments[${index}]`, entry, state.tick));
 }

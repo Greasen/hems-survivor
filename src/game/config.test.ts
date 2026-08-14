@@ -27,6 +27,11 @@ describe('assertValidConfig', () => {
     ['eventEffects.cloudySolarMultiplier', (config: GameConfig) => { config.eventEffects.cloudySolarMultiplier = -0.1; }],
     ['upgrades.solarMultiplier', (config: GameConfig) => { config.upgrades.solarMultiplier = Number.NaN; }],
     ['phase', (config: GameConfig) => { config.phase = [{ ...config.phase[0], from: 1 }]; }],
+    ['phase coverage', (config: GameConfig) => { config.phase = [...config.phase, { name: 'extra', from: 360, to: 360, solar: 0, home: 0 }]; }],
+    ['random.solar', (config: GameConfig) => { config.random.solarMin = -0.1; }],
+    ['upgradeTicks', (config: GameConfig) => { config.upgradeTicks = [180, 90]; }],
+    ['upgradeTicks', (config: GameConfig) => { config.upgradeTicks = [30, 60, 90, 120, 150]; }],
+    ['events', (config: GameConfig) => { config.events = Object.fromEntries(Object.entries(config.events).map(([kind, value]) => [kind, { ...value, warning: 10 }])) as GameConfig['events']; }],
   ] as const)('rejects invalid %s with a diagnostic field', (_field, mutate) => {
     expect(() => assertValidConfig(configWith(mutate))).toThrow(new RegExp(_field.replace('.', '\\.') + '|phase'));
   });
@@ -40,6 +45,16 @@ describe('assertValidConfig', () => {
       value.phase = value.phase.map((phase) => ({ ...phase, solar: 0, home: 0 }));
       value.upgrades.solarMultiplier = 0;
       value.upgrades.homeMultiplier = 0;
+    });
+    expect(() => assertValidConfig(config)).not.toThrow();
+  });
+
+  it('accepts legal fractional scores and negative home randomness', () => {
+    const config = configWith((value) => {
+      value.score.survivalPerTick = 0.25;
+      value.score.solarDirectPerUnit = 0.125;
+      value.random.homeMin = -0.25;
+      value.random.homeMax = 0.25;
     });
     expect(() => assertValidConfig(config)).not.toThrow();
   });

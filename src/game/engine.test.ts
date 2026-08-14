@@ -168,7 +168,16 @@ describe('game engine', () => {
     expect(failed.lastReport?.reasons.some((item) => item.code === 'upgradeAvailable')).toBe(false);
     expect(failed.keyMoments.some((item) => item.code === 'upgradeAvailable')).toBe(false);
 
-    const victoryConfig = { ...standardConfig, durationTicks: 90 };
+    const victoryConfig = {
+      ...standardConfig,
+      durationTicks: 90,
+      crisisStartTick: 80,
+      upgradeTicks: [30, 60],
+      phase: [
+        { name: 'safe', from: 0, to: 59, solar: 1.4, home: 1 },
+        { name: 'crisis', from: 60, to: 89, solar: 0.5, home: 1.4 },
+      ],
+    };
     const won = runTick(stateAt({ tick: 89 }), victoryConfig);
     expect(won.status).toBe('victory');
     expect(won.lastReport?.reasons.some((item) => item.code === 'upgradeAvailable')).toBe(false);
@@ -176,7 +185,7 @@ describe('game engine', () => {
   });
 
   it('clears all per-run fields on restart', () => {
-    const dirty = stateAt({ tick: 120, event: { kind: 'cloudy', stage: 'active', startsAt: 100, endsAt: 125, allHomeSupplied: false, targetEvLevel: null }, nextEventWarningAt: null, lastEventKind: 'cloudy', selectedUpgrades: ['solar_optimizer'], pendingUpgrades: ['battery_power'], triggeredUpgradeTicks: [90], outageTicks: 4, stableTicks: 3, gameOverReason: 'familyDepleted', lastReport: null, keyMoments: [{ code: 'old', tick: 120 }] });
+    const dirty = stateAt({ status: 'gameOver', tick: 120, event: { kind: 'cloudy', stage: 'active', startsAt: 100, endsAt: 125, allHomeSupplied: false, targetEvLevel: null }, nextEventWarningAt: null, lastEventKind: 'cloudy', selectedUpgrades: ['solar_optimizer'], pendingUpgrades: [], triggeredUpgradeTicks: [90], outageTicks: 4, stableTicks: 3, gameOverReason: 'familyDepleted', lastReport: null, keyMoments: [{ code: 'old', tick: 120 }] });
     const restarted = dispatchAction(dirty, { type: 'restart', seed: 7 }, standardConfig);
     expect(restarted).toEqual(createInitialState(7));
   });

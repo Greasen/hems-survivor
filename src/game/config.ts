@@ -89,16 +89,17 @@ export function assertValidConfig(config: GameConfig): void {
   integer('durationTicks', config.durationTicks);
   if (config.durationTicks <= 0) invalid('durationTicks', 'must be greater than 0');
   integer('crisisStartTick', config.crisisStartTick);
-  if (config.crisisStartTick <= 0 || (config.crisisStartTick >= config.durationTicks && config.phase?.at(-1)?.to === config.durationTicks - 1)) {
-    invalid('crisisStartTick', `must be between 1 and ${config.durationTicks - 1}`);
+  if (config.crisisStartTick < 0 || config.crisisStartTick >= config.durationTicks) {
+    invalid('crisisStartTick', `must be between 0 and ${config.durationTicks - 1}`);
   }
 
   const upgradeTicks = config.upgradeTicks;
+  if (upgradeTicks.length > 4) invalid('upgradeTicks', 'must contain at most 4 trigger ticks');
   if (new Set(upgradeTicks).size !== upgradeTicks.length) invalid('upgradeTicks', 'must not contain duplicates');
   upgradeTicks.forEach((tick, index) => {
     integer(`upgradeTicks[${index}]`, tick);
-    const hasTailPhase = config.phase?.at(-1)?.to !== config.durationTicks - 1;
-    if (tick <= 0 || (tick > config.durationTicks && !hasTailPhase)) invalid(`upgradeTicks[${index}]`, 'is outside the run');
+    if (tick <= 0 || tick >= config.durationTicks) invalid(`upgradeTicks[${index}]`, 'is outside the run');
+    if (index > 0 && tick <= upgradeTicks[index - 1]) invalid(`upgradeTicks[${index}]`, 'must be strictly increasing');
   });
 
   finite('battery.capacity', config.battery.capacity);
@@ -134,7 +135,7 @@ export function assertValidConfig(config: GameConfig): void {
   const scoreEntries: Array<[string, number]> = Object.entries(config.score) as Array<[string, number]>;
   for (const [path, value] of scoreEntries) nonNegative(`score.${path}`, value);
 
-  range('random.solar', config.random && { min: config.random.solarMin, max: config.random.solarMax });
+  range('random.solar', { min: config.random.solarMin, max: config.random.solarMax }, { nonNegative: true });
   range('random.home', { min: config.random.homeMin, max: config.random.homeMax });
   range('eventCooldown.learning', { min: config.eventCooldown.learningMin, max: config.eventCooldown.learningMax }, { nonNegative: true });
   range('eventCooldown.pressure', { min: config.eventCooldown.pressureMin, max: config.eventCooldown.pressureMax }, { nonNegative: true });
@@ -144,6 +145,9 @@ export function assertValidConfig(config: GameConfig): void {
     nonNegative(`events.${kind}.warning`, config.events[kind].warning);
     integer(`events.${kind}.duration`, config.events[kind].duration);
     if (config.events[kind].duration <= 0) invalid(`events.${kind}.duration`, 'must be greater than 0');
+  }
+  if (!(['cloudy', 'peakPrice', 'familyLoad', 'evEmergency'] as const).some((kind) => config.events[kind].warning === 5)) {
+    invalid('events', 'at least one event warning must equal 5 for the first event pool');
   }
 
   const effectEntries: Array<[string, number]> = Object.entries(config.eventEffects) as Array<[string, number]>;
@@ -164,5 +168,5 @@ export function assertValidConfig(config: GameConfig): void {
     nonNegative(`${path}.home`, phase.home);
     expectedFrom = phase.to + 1;
   });
-  if (expectedFrom <= config.durationTicks - 1) invalid('phase', `must cover ticks 0..${config.durationTicks - 1}`);
+  if (expectedFrom !== config.durationTicks) invalid('phase', `must cover exactly ticks 0..${config.durationTicks - 1}`);
 }
