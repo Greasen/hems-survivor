@@ -61,6 +61,12 @@ export interface EventRuntime {
   allHomeSupplied: boolean;
   targetEvLevel: number | null;
 }
+export interface EventModifiers {
+  solarMultiplier: number;
+  homeDelta: number;
+  buyPrice: number | null;
+  sellPrice: number | null;
+}
 export interface EnergyFlow { from: FlowNode; to: FlowNode; amount: number }
 export interface TickEnvironment { solar: number; home: number; buyPrice: number; sellPrice: number }
 export interface EnergyResult {
