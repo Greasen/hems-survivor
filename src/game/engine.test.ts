@@ -110,6 +110,47 @@ describe('game engine', () => {
     expect(dispatchAction(paused, { type: 'resume' }, standardConfig).status).toBe('running');
   });
 
+  it('keeps Grid buy and sell controls as independent switches', () => {
+    const initial = stateAt({ grid: { buyEnabled: false, sellEnabled: false, available: true } });
+    const selling = dispatchAction(initial, { type: 'setGridSell', enabled: true }, standardConfig);
+    const both = dispatchAction(selling, { type: 'setGridBuy', enabled: true }, standardConfig);
+    expect(both.grid).toEqual({ buyEnabled: true, sellEnabled: true, available: true });
+    expect(both.resources).toEqual(initial.resources);
+    expect(both.battery.level).toBe(initial.battery.level);
+    expect(both.ev.level).toBe(initial.ev.level);
+  });
+
+  it('reports the post-settlement continuous outage seconds', () => {
+    const normal = runTick(stateAt(), standardConfig);
+    expect(normal.lastReport?.outageTicks).toBe(0);
+    const outageConfig = {
+      ...standardConfig,
+      grid: { ...standardConfig.grid, buyPower: 0 },
+      phase: standardConfig.phase.map((phase) => ({ ...phase, solar: 0, home: 2 })),
+    };
+    const outage = runTick(stateAt({ battery: { ...stateAt().battery, level: 0 }, grid: { buyEnabled: false, sellEnabled: false, available: false } }), outageConfig);
+    expect(outage.outageTicks).toBe(1);
+    expect(outage.lastReport?.outageTicks).toBe(1);
+  });
+
+  it('does not record an upgrade reason or key moment when the upgrade Tick ends the run', () => {
+    const failureConfig = {
+      ...standardConfig,
+      grid: { ...standardConfig.grid, buyPower: 0 },
+      phase: standardConfig.phase.map((phase) => ({ ...phase, solar: 0, home: 2 })),
+    };
+    const failed = runTick(stateAt({ tick: 89, outageTicks: 9, battery: { ...stateAt().battery, level: 0 }, grid: { buyEnabled: false, sellEnabled: false, available: false } }), failureConfig);
+    expect(failed.status).toBe('gameOver');
+    expect(failed.lastReport?.reasons.some((item) => item.code === 'upgradeAvailable')).toBe(false);
+    expect(failed.keyMoments.some((item) => item.code === 'upgradeAvailable')).toBe(false);
+
+    const victoryConfig = { ...standardConfig, durationTicks: 90 };
+    const won = runTick(stateAt({ tick: 89 }), victoryConfig);
+    expect(won.status).toBe('victory');
+    expect(won.lastReport?.reasons.some((item) => item.code === 'upgradeAvailable')).toBe(false);
+    expect(won.keyMoments.some((item) => item.code === 'upgradeAvailable')).toBe(false);
+  });
+
   it('clears all per-run fields on restart', () => {
     const dirty = stateAt({ tick: 120, event: { kind: 'cloudy', stage: 'active', startsAt: 100, endsAt: 125, allHomeSupplied: false, targetEvLevel: null }, nextEventWarningAt: null, lastEventKind: 'cloudy', selectedUpgrades: ['solar_optimizer'], pendingUpgrades: ['battery_power'], triggeredUpgradeTicks: [90], outageTicks: 4, stableTicks: 3, gameOverReason: 'familyDepleted', lastReport: null, keyMoments: [{ code: 'old', tick: 120 }] });
     const restarted = dispatchAction(dirty, { type: 'restart', seed: 7 }, standardConfig);

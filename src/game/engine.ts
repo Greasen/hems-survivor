@@ -27,7 +27,6 @@ export interface EnvironmentResult {
   eventAfterEnergy?: EventRuntime | null;
   eventAfterResolution?: EventRuntime | null;
   eventResolved?: boolean;
-  upgradeTick?: boolean;
   previousResources?: GameState['resources'];
   previousStatus?: GameState['status'];
 }
@@ -126,7 +125,6 @@ export function buildTickReport(
     if (scoreDelta < 0) appendReason(reasons, reason('scoreLost', tick, scoreDelta));
   }
 
-  if (environmentResult.upgradeTick) appendReason(reasons, reason('upgradeAvailable', tick));
   if (state.status === 'victory') appendReason(reasons, reason('victory', tick));
   if (state.status === 'gameOver') appendReason(reasons, reason(`gameOver:${state.gameOverReason ?? 'unknown'}`, tick));
 
@@ -139,6 +137,7 @@ export function buildTickReport(
     sellPrice: environmentResult.environment.sellPrice,
     flows: energy.flows,
     unmetHome: energy.unmetHome,
+    outageTicks: state.outageTicks,
     curtailed: energy.curtailed,
     reasons,
   };
@@ -176,7 +175,6 @@ export function runTick(input: GameState, config: GameConfig = standardConfig): 
     eventAfterEnergy: energy.state.event ? structuredClone(energy.state.event) : null,
     eventAfterResolution: eventResolvedState.event ? structuredClone(eventResolvedState.event) : null,
     eventResolved: Boolean(eventAdvanced.state.event && !eventResolvedState.event && nextTick >= eventAdvanced.state.event.endsAt),
-    upgradeTick: config.upgradeTicks.includes(nextTick),
     previousResources: input.resources,
     previousStatus: input.status,
   };
@@ -189,6 +187,9 @@ export function runTick(input: GameState, config: GameConfig = standardConfig): 
     state.randomState = draw.randomState;
     state.triggeredUpgradeTicks = [...state.triggeredUpgradeTicks, nextTick];
     state.status = 'choosingUpgrade';
+    const upgradeReason = reason('upgradeAvailable', nextTick);
+    appendReason(state.lastReport.reasons, upgradeReason);
+    state.keyMoments = appendKeyMoments(state.keyMoments, [upgradeReason], 20);
   }
   // Keep the assertion at the orchestration boundary so every module composition is checked.
   assertValidState(state);
@@ -218,9 +219,9 @@ export function dispatchAction(state: GameState, action: PlayerAction, config: G
     case 'setEvMode':
       return { ...state, ev: { ...state.ev, mode: action.mode } };
     case 'setGridBuy':
-      return { ...state, grid: { ...state.grid, buyEnabled: action.enabled, sellEnabled: action.enabled ? false : state.grid.sellEnabled } };
+      return { ...state, grid: { ...state.grid, buyEnabled: action.enabled } };
     case 'setGridSell':
-      return { ...state, grid: { ...state.grid, sellEnabled: action.enabled, buyEnabled: action.enabled ? false : state.grid.buyEnabled } };
+      return { ...state, grid: { ...state.grid, sellEnabled: action.enabled } };
     default:
       return state;
   }

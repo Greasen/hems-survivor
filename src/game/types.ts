@@ -88,6 +88,7 @@ export interface TickReport {
   sellPrice: number;
   flows: EnergyFlow[];
   unmetHome: number;
+  outageTicks: number;
   curtailed: number;
   reasons: ReasonEntry[];
 }
