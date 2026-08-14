@@ -1,4 +1,5 @@
 import type { BatteryMode, EvMode, GameState, PlayerAction } from '../game/types';
+import { getGridReopenCountdown } from './RiskPanel';
 
 interface ControlPanelProps {
   state: GameState;
@@ -19,7 +20,10 @@ const evModes: readonly [EvMode, string][] = [
 export function ControlPanel({ state, onAction }: ControlPanelProps) {
   const gridUnavailable = !state.grid.available;
   const buyUnavailable = gridUnavailable || state.resources.money <= 0;
-  const gridReason = gridUnavailable ? '电网关闭' : state.resources.money <= 0 ? '余额不足' : null;
+  const reopenIn = gridUnavailable ? getGridReopenCountdown(state) : null;
+  const gridReason = gridUnavailable
+    ? (reopenIn === null ? '电网关闭' : `电网将在 ${reopenIn} 秒后重新开放`)
+    : state.resources.money <= 0 ? '余额不足' : null;
 
   return (
     <section className="control-panel" aria-label="能源控制">

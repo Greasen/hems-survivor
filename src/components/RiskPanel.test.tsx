@@ -23,6 +23,19 @@ describe('RiskPanel', () => {
     expect(screen.getByText('连续断电 4 秒')).toBeInTheDocument();
   });
 
+  it('shows EV emergency as satisfied and does not report its deadline risk', () => {
+    const state = stateAt({ tick: 64, resources: { money: 0, family: 80, score: 0 }, event: { kind: 'evEmergency', stage: 'active', startsAt: 60, endsAt: 65, allHomeSupplied: true, targetEvLevel: 45 }, ev: { ...stateAt().ev, level: 45 } });
+    render(<RiskPanel state={state} />);
+    expect(screen.getByText('已满足')).toBeInTheDocument();
+    expect(screen.queryByText('事件即将结束')).not.toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('余额为零');
+  });
+
+  it('shows crisis grid reopen countdown when the current grid is closed', () => {
+    render(<RiskPanel state={stateAt({ tick: 311, grid: { buyEnabled: true, sellEnabled: true, available: false } })} />);
+    expect(screen.getByText('电网将在 10 秒后重新开放')).toBeInTheDocument();
+  });
+
   it.each([
     ['sustained outage', stateAt({ outageTicks: 10, resources: { money: 0, family: 10, score: 0 }, battery: { ...stateAt().battery, level: 10 } }), '持续断电风险'],
     ['family', stateAt({ outageTicks: 1, resources: { money: 20, family: 20, score: 0 } }), '家庭满意度即将耗尽'],
