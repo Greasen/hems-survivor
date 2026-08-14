@@ -19,7 +19,7 @@
 | 高峰电价事件 | `src/game/events.test.ts`：买卖价格倍率和生命周期 | 自动化通过 |
 | 家庭负载事件 | `src/game/events.test.ts`：成功奖励、短缺无奖励和事件结束 | 自动化通过 |
 | EV 紧急出行事件 | `src/game/events.test.ts`、`src/game/engine.test.ts`：目标、epsilon 边界、成功/失败 | 自动化通过 |
-| 三次三选一和六个升级 | `src/game/upgrades.test.ts`、`src/game/engine.test.ts`、`src/App.test.tsx`：三候选、单次应用、Tick 90 暂停 | 自动化通过 |
+| 三次三选一和六个升级 | `src/game/upgrades.test.ts`、`src/game/engine.test.ts`、`src/App.test.tsx`：三候选、单次应用、Tick 90 暂停；升级效果 live feedback 未由这些测试完整覆盖 | 流程/规则自动化通过；整体升级反馈需最终审计确认 |
 | 事件和升级可由固定种子复现 | `src/game/random.test.ts`、`src/game/engine.test.ts`：随机序列与完整局面 replay | 自动化通过 |
 | 300～359 秒电网危机 | `src/game/events.test.ts`：Tick 300 清理普通事件及危机周期；`src/components/ControlPanel.test.tsx`、`src/components/RiskPanel.test.tsx`：关闭倒计时 | 自动化通过 |
 | 360 秒胜利 | `src/game/scoring.test.ts`：Tick 360 胜利与奖励；E2E `scenario=victory` 加速覆盖结局 | 自动化通过（测试配置） |
@@ -29,8 +29,8 @@
 | 连续三局无需刷新 | `src/App.test.tsx`、E2E `can restart three consecutive runs without a page refresh` | 自动化通过（双视口） |
 | 360×800 和 390×844 无横向滚动 | E2E `plays, pauses, upgrades, and restarts without horizontal overflow` | 自动化通过（双视口） |
 | 核心控件在手机视口内且可触控 | E2E `keeps mobile controls and dialogs usable at touch size`、布局几何断言 | 自动化通过（双视口） |
-| UI 能源流、事件和升级效果可读 | `src/components/EnergyBoard.test.tsx`、`src/components/RiskPanel.test.tsx`、`src/components/Overlays.test.tsx`：能源卡、流向、事件/风险和升级/结局文字 | 自动化通过；真机可读性待确认 |
-| 事件有预警和应对窗口 | `src/game/events.test.ts`：warning/active/end 生命周期；`src/components/RiskPanel.test.tsx`：倒计时和风险提示 | 自动化通过；真机可理解性待确认 |
+| UI 能源流、事件和升级效果可读 | `src/components/EnergyBoard.test.tsx`、`src/components/RiskPanel.test.tsx`、`src/components/Overlays.test.tsx`：能源卡、流向、当前事件/风险和升级弹层/结局文字；未覆盖完整 live effect 反馈 | 局部渲染测试通过；整体 live event/upgrade feedback 需最终审计确认，真机可读性待确认 |
+| 事件有预警和应对窗口 | `src/game/events.test.ts`：warning/active/end 生命周期；`src/components/RiskPanel.test.tsx`：倒计时和风险提示；未证明每种 live event 的完整操作反馈 | 生命周期/局部提示测试通过；整体应对窗口需最终审计确认，真机可理解性待确认 |
 | 不可恢复错误显示可恢复界面 | `src/components/Overlays.test.tsx`：`GameErrorBoundary` 显示错误并提供重开 | 自动化通过 |
 | 页面后台自动暂停且不补算 | `src/hooks/useGameController.test.tsx`：visibility change、卸载清理和不追赶时间 | 自动化通过 |
 | 构建和全部测试通过 | `npm test`：15 个测试文件、147/147 tests passed；`npm run e2e`：10/10 tests passed（mobile-360、mobile-390）；`npm run build`：TypeScript/Vite production build 通过 | 自动化通过 |
@@ -54,8 +54,8 @@
 2. 手机打开 preview 显示的 `Network` 地址，确认地址不含 `testMode` 或 `scenario`，使用标准配置完成一局 360 秒对局。
 3. 在同一页面连续完成三局并重开，不刷新页面；另行刷新一次，确认没有存档且刷新后是新局。
 4. 记录至少两种升级路线，以及一项实际改变局面的操作；记录结果和主要成功/失败原因。
-5. 给新玩家无额外提示，30 秒内询问其能否指出：主要目标、主要资源、最大危险和可操作项。
-6. 记录设备/浏览器、seed（如手动记录）、最终结果、布局溢出、遮挡、点击区域或其他问题；完成后用 `Ctrl-C` 停止 preview。
+5. 给新玩家无额外提示，在 30 秒内逐项询问并记录：当前最危险的资源；为什么需要 Battery 和 Grid；主要目标、主要资源、最大危险和可操作项；三选一是否带来不同策略；失败后下一局准备尝试什么；以及是否在无聊前进入新的压力阶段。
+6. 记录设备/浏览器、seed（如手动记录）、最终结果、至少两种升级路线、一项挽回局面的操作及其结果/原因、布局溢出、遮挡、点击区域或其他问题；完成后用 `Ctrl-C` 停止 preview。
 
 | 项目 | 记录 |
 |---|---|
@@ -67,6 +67,11 @@
 | 30 秒内指出的主要资源 | 待新玩家/用户试玩 |
 | 30 秒内指出的最大危险 | 待新玩家/用户试玩 |
 | 30 秒内指出的可操作项 | 待新玩家/用户试玩 |
+| 当前最危险的资源 | 待新玩家/用户试玩 |
+| 为什么需要 Battery 和 Grid | 待新玩家/用户试玩 |
+| 三选一是否带来不同策略 | 待新玩家/用户试玩 |
+| 失败后下一局准备尝试什么 | 待新玩家/用户试玩 |
+| 是否在无聊前进入新的压力阶段 | 待新玩家/用户试玩 |
 | 至少两种升级路线 | 待真机试玩 |
 | 改变局面的操作 | 待真机试玩 |
 | 最终结果与原因 | 待真机试玩 |
@@ -84,7 +89,7 @@
 | `npm run build` | 通过 | `tsc --noEmit && vite build` 完成，Vite 37 modules transformed，退出码 0 |
 | `npm run e2e` | 通过（提升权限后） | 10 tests passed，覆盖 `mobile-360` 和 `mobile-390`，退出码 0 |
 | `git diff --check` | 通过 | 退出码 0，无空白错误 |
-| `git status --short` | 通过 | 仅有 `README.md` 与 `docs/MVP_V0.1_ACCEPTANCE.md` 两个预期文档变更 |
+| `git status --short` | 历史快照 | 该记录发生在文档初稿提交前，当时仅有 `README.md` 与 `docs/MVP_V0.1_ACCEPTANCE.md`；此后新增 `package.json` 的 `preview` script，当前范围以父代理最终 fresh 验证为准 |
 
 首次在受限沙箱执行 `npm run e2e` 时本地测试服务器监听被系统以 `EPERM` 拒绝；在获准启动本地服务器后重跑，10 项全部通过。该环境事实不影响测试结果，但保留在记录中以便复核。
 
