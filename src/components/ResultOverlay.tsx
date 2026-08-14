@@ -1,5 +1,6 @@
 import type { EventKind, GameOverReason, GameState, ReasonEntry, UpgradeId } from '../game/types';
 import { upgradeText } from '../game/upgrades';
+import { ModalDialog } from './ModalDialog';
 
 interface ResultOverlayProps {
   state: GameState;
@@ -61,7 +62,7 @@ export function ResultOverlay({ state, onRestart }: ResultOverlayProps) {
   const reason = state.gameOverReason ? gameOverLabels[state.gameOverReason] : null;
 
   return (
-    <section className="overlay overlay--result" role="dialog" aria-modal="true" aria-labelledby="result-title">
+    <ModalDialog className="overlay overlay--result" titleId="result-title">
       <h2 id="result-title">{title}</h2>
       {reason ? <><p>主要原因</p><p>{reason}</p></> : null}
       <p>Seed {state.seed}</p>
@@ -91,7 +92,7 @@ export function ResultOverlay({ state, onRestart }: ResultOverlayProps) {
         ) : <p>暂无</p>}
       </section>
       <button type="button" onClick={onRestart}>重新开始</button>
-    </section>
+    </ModalDialog>
   );
 }
 

@@ -1,6 +1,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { useState } from 'react';
 import { stateAt } from '../test/fixtures';
 import type { GameState } from '../game/types';
 import { StartOverlay } from './StartOverlay';
@@ -29,6 +30,28 @@ describe('StartOverlay', () => {
     render(<StartOverlay onStart={onStart} />);
     await user.click(screen.getByRole('button', { name: '开始游戏' }));
     expect(onStart).toHaveBeenCalledOnce();
+  });
+
+  it('owns keyboard focus while open and restores the previous focus on close', async () => {
+    const user = userEvent.setup();
+    const background = document.createElement('button');
+    background.type = 'button';
+    background.textContent = '背景按钮';
+    document.body.append(background);
+    background.focus();
+
+    const { unmount } = render(<StartOverlay onStart={vi.fn()} />);
+    const start = screen.getByRole('button', { name: '开始游戏' });
+    expect(start).toHaveFocus();
+    await user.tab();
+    expect(start).toHaveFocus();
+    await user.tab({ shift: true });
+    expect(start).toHaveFocus();
+    expect(background).not.toHaveFocus();
+
+    unmount();
+    expect(background).toHaveFocus();
+    background.remove();
   });
 });
 
@@ -144,5 +167,30 @@ describe('GameErrorBoundary', () => {
     expect(onError).toHaveBeenCalledWith(expect.objectContaining({ message: 'broken state' }));
     await user.click(screen.getByRole('button', { name: '重新开始' }));
     expect(onRestart).toHaveBeenCalledOnce();
+  });
+
+  it('recovers to a healthy child and reports the initial error only once', async () => {
+    function HealthyChild() {
+      return <p>健康状态</p>;
+    }
+
+    function Harness() {
+      const [healthy, setHealthy] = useState(false);
+      const onRestart = () => setHealthy(true);
+      return (
+        <GameErrorBoundary onRestart={onRestart} onError={onError}>
+          {healthy ? <HealthyChild /> : <BrokenChild />}
+        </GameErrorBoundary>
+      );
+    }
+
+    const onError = vi.fn();
+    const user = userEvent.setup();
+    render(<Harness />);
+    expect(screen.getByRole('heading', { name: '游戏状态异常' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '重新开始' }));
+    expect(screen.getByText('健康状态')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: '游戏状态异常' })).not.toBeInTheDocument();
+    expect(onError).toHaveBeenCalledOnce();
   });
 });

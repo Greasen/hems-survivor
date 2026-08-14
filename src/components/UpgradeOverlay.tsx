@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import type { UpgradeId } from '../game/types';
 import { upgradeText } from '../game/upgrades';
+import { ModalDialog } from './ModalDialog';
 
 interface UpgradeOverlayProps {
   choices: readonly UpgradeId[];
@@ -19,7 +20,7 @@ export function UpgradeOverlay({ choices, onChoose }: UpgradeOverlayProps) {
   };
 
   return (
-    <section className="overlay overlay--upgrade" role="dialog" aria-modal="true" aria-labelledby="upgrade-title">
+    <ModalDialog className="overlay overlay--upgrade" titleId="upgrade-title">
       <h2 id="upgrade-title">选择升级</h2>
       <div className="upgrade-cards">
         {choices.map((upgrade) => {
@@ -35,6 +36,6 @@ export function UpgradeOverlay({ choices, onChoose }: UpgradeOverlayProps) {
           );
         })}
       </div>
-    </section>
+    </ModalDialog>
   );
 }
