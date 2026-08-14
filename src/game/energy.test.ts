@@ -40,6 +40,14 @@ describe('settleEnergy', () => {
     expect(result.state.battery.level).toBe(51);
   });
 
+  it('shares Battery charge power between Solar and Grid in one Tick', () => {
+    const state = stateAt({ battery: { level: 50, capacity: 100, chargePower: 1, dischargePower: 1, mode: 'charge' } });
+    const result = settleEnergy(state, standardConfig, { solar: 1.5, home: 1, buyPrice: 1, sellPrice: 0.6 });
+    expect(result.flows).toContainEqual({ from: 'solar', to: 'battery', amount: 0.5 });
+    expect(result.flows).toContainEqual({ from: 'grid', to: 'battery', amount: 0.5 });
+    expect(result.state.battery.level).toBe(51);
+  });
+
   it('charges EV from Solar before Battery and Grid', () => {
     const state = stateAt({ ev: { level: 30, capacity: 80, chargePower: 0.6, mode: 'charging' }, battery: { level: 60, capacity: 100, chargePower: 1, dischargePower: 1, mode: 'discharge' } });
     const result = settleEnergy(state, standardConfig, { solar: 1.6, home: 1, buyPrice: 1, sellPrice: 0.6 });

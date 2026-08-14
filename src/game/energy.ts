@@ -8,6 +8,7 @@ export function settleEnergy(input: GameState, config: GameConfig, environment: 
   const flows: EnergyFlow[] = [];
   let solar = environment.solar;
   let home = environment.home;
+  let batteryChargeBudget = state.battery.chargePower;
   let batteryDischargeBudget = Math.min(state.battery.dischargePower, state.battery.level);
   let gridBuyBudget = state.grid.available && state.grid.buyEnabled ? config.grid.buyPower : 0;
   let gridSellBudget = state.grid.available && state.grid.sellEnabled ? config.grid.sellPower : 0;
@@ -55,15 +56,17 @@ export function settleEnergy(input: GameState, config: GameConfig, environment: 
   const unmetHome = clean(home);
 
   if (solar > 0 && state.battery.mode !== 'discharge') {
-    const amount = Math.min(solar, state.battery.chargePower, state.battery.capacity - state.battery.level);
+    const amount = Math.min(solar, batteryChargeBudget, state.battery.capacity - state.battery.level);
     flow('solar', 'battery', amount);
     state.battery.level += amount;
+    batteryChargeBudget -= amount;
     solar -= amount;
   }
 
-  if (state.battery.mode === 'charge' && state.battery.level < state.battery.capacity) {
-    const amount = buy('battery', Math.min(state.battery.chargePower, state.battery.capacity - state.battery.level));
+  if (state.battery.mode === 'charge' && batteryChargeBudget > 0 && state.battery.level < state.battery.capacity) {
+    const amount = buy('battery', Math.min(batteryChargeBudget, state.battery.capacity - state.battery.level));
     state.battery.level += amount;
+    batteryChargeBudget -= amount;
   }
 
   if (state.ev.mode === 'charging' && state.ev.level < state.ev.capacity) {
