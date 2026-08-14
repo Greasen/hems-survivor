@@ -46,6 +46,20 @@ describe('events', () => {
     expect(result.status).toBe('running');
   });
 
+  it('treats an EV level within epsilon as satisfied at the deadline', () => {
+    const state = stateAt({ ev: { ...stateAt().ev, level: 45 - 2.84e-14 }, event: { kind: 'evEmergency', stage: 'active', startsAt: 60, endsAt: 105, allHomeSupplied: true, targetEvLevel: 45 } });
+    const result = resolveEventAfterEnergy(state, 105, 0, standardConfig);
+    expect(result.resources.score).toBe(150);
+    expect(result.resources.family).toBe(100);
+  });
+
+  it('fails an EV target beyond epsilon at the deadline', () => {
+    const state = stateAt({ ev: { ...stateAt().ev, level: 45 - 1.1e-6 }, event: { kind: 'evEmergency', stage: 'active', startsAt: 60, endsAt: 105, allHomeSupplied: true, targetEvLevel: 45 } });
+    const result = resolveEventAfterEnergy(state, 105, 0, standardConfig);
+    expect(result.resources.score).toBe(0);
+    expect(result.resources.family).toBe(85);
+  });
+
   it('marks family-load events unsuccessful after any positive unmet home', () => {
     const state = stateAt({ event: { kind: 'familyLoad', stage: 'active', startsAt: 60, endsAt: 85, allHomeSupplied: true, targetEvLevel: null } });
     const result = resolveEventAfterEnergy(state, 70, 0.1, standardConfig);

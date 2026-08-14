@@ -1,5 +1,6 @@
 import type { EventKind, GameState } from '../game/types';
 import { standardConfig } from '../game/config';
+import { isEvTargetSatisfied } from '../game/events';
 
 interface RiskPanelProps {
   state: GameState;
@@ -26,7 +27,7 @@ export function getPrimaryRisk(state: GameState): string {
   if (state.outageTicks >= 10) return '持续断电风险';
   if (state.resources.family <= 20) return '家庭满意度即将耗尽';
   const eventRemaining = state.event ? state.event.endsAt - state.tick : null;
-  const evSatisfied = state.event?.kind === 'evEmergency' && state.event.targetEvLevel !== null && state.ev.level >= state.event.targetEvLevel;
+  const evSatisfied = state.event?.kind === 'evEmergency' && state.event.targetEvLevel !== null && isEvTargetSatisfied(state.ev.level, state.event.targetEvLevel);
   if (!evSatisfied && eventRemaining !== null && state.event?.stage === 'active' && eventRemaining > 0 && eventRemaining <= 5) return '事件即将结束';
   if (state.resources.money <= 0) return '余额为零';
   if (state.battery.level <= 25) return '电池已达储备线';
@@ -43,7 +44,7 @@ function eventTiming(state: GameState): string {
 export function RiskPanel({ state }: RiskPanelProps) {
   const risk = getPrimaryRisk(state);
   const riskRole = risk === '当前风险稳定' ? 'status' : 'alert';
-  const evSatisfied = state.event?.kind === 'evEmergency' && state.event.targetEvLevel !== null && state.ev.level >= state.event.targetEvLevel;
+  const evSatisfied = state.event?.kind === 'evEmergency' && state.event.targetEvLevel !== null && isEvTargetSatisfied(state.ev.level, state.event.targetEvLevel);
   const gridReopenIn = getGridReopenCountdown(state);
 
   return (

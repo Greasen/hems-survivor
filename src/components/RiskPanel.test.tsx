@@ -24,11 +24,17 @@ describe('RiskPanel', () => {
   });
 
   it('shows EV emergency as satisfied and does not report its deadline risk', () => {
-    const state = stateAt({ tick: 64, event: { kind: 'evEmergency', stage: 'active', startsAt: 60, endsAt: 65, allHomeSupplied: true, targetEvLevel: 45 }, ev: { ...stateAt().ev, level: 45 } });
+    const state = stateAt({ tick: 64, event: { kind: 'evEmergency', stage: 'active', startsAt: 60, endsAt: 65, allHomeSupplied: true, targetEvLevel: 45 }, ev: { ...stateAt().ev, level: 45 - 2.84e-14 } });
     render(<RiskPanel state={state} />);
     expect(screen.getByText('已满足')).toBeInTheDocument();
     expect(screen.queryByText('事件即将结束')).not.toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent('当前风险稳定');
+  });
+
+  it('keeps an EV emergency unsatisfied when it exceeds epsilon', () => {
+    render(<RiskPanel state={stateAt({ tick: 64, event: { kind: 'evEmergency', stage: 'active', startsAt: 60, endsAt: 65, allHomeSupplied: true, targetEvLevel: 45 }, ev: { ...stateAt().ev, level: 45 - 1.1e-6 } })} />);
+    expect(screen.getByText('进行中')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('事件即将结束');
   });
 
   it('shows crisis grid reopen countdown when the current grid is closed', () => {

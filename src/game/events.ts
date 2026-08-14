@@ -10,6 +10,10 @@ export const EMPTY_EVENT_MODIFIERS: EventModifiers = {
 
 const EVENT_KINDS: readonly EventKind[] = ['cloudy', 'peakPrice', 'familyLoad', 'evEmergency'];
 
+export function isEvTargetSatisfied(level: number, target: number): boolean {
+  return level + 1e-6 >= target;
+}
+
 function isEventActive(event: EventRuntime | null, nextTick: number): event is EventRuntime {
   return Boolean(event && event.stage === 'active' && nextTick >= event.startsAt && nextTick < event.endsAt);
 }
@@ -116,7 +120,7 @@ export function resolveEventAfterEnergy(
     state.resources.score = Math.max(0, state.resources.score + config.score.familyEvent);
   } else if (event.kind === 'evEmergency') {
     const target = event.targetEvLevel ?? state.ev.level;
-    if (state.ev.level >= target) {
+    if (isEvTargetSatisfied(state.ev.level, target)) {
       state.resources.score = Math.max(0, state.resources.score + config.score.evEvent);
     } else {
       state.resources.family = Math.max(0, state.resources.family - config.eventEffects.evFamilyPenalty);
