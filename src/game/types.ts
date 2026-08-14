@@ -62,6 +62,16 @@ export interface EventRuntime {
   targetEvLevel: number | null;
 }
 export interface EnergyFlow { from: FlowNode; to: FlowNode; amount: number }
+export interface TickEnvironment { solar: number; home: number; buyPrice: number; sellPrice: number }
+export interface EnergyResult {
+  state: GameState;
+  flows: EnergyFlow[];
+  unmetHome: number;
+  curtailed: number;
+  bought: number;
+  sold: number;
+  solarDirectUse: number;
+}
 export interface ReasonEntry { code: string; amount?: number; tick: number }
 export interface TickReport {
   tick: number;
