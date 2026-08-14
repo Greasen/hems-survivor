@@ -8,10 +8,12 @@ import { RiskPanel } from './components/RiskPanel';
 import { StartOverlay } from './components/StartOverlay';
 import { StatusBar } from './components/StatusBar';
 import { UpgradeOverlay } from './components/UpgradeOverlay';
+import type { GameConfig } from './game/types';
+import { selectRuntimeConfig } from './game/runtimeConfig';
 import { useGameController } from './hooks/useGameController';
 
-function GameScreen() {
-  const game = useGameController();
+function GameScreen({ config }: { config: GameConfig }) {
+  const game = useGameController(config);
   const restart = () => game.dispatch({ type: 'restart', seed: Date.now() >>> 0 });
   const pauseOnError = () => game.dispatch({ type: 'pause' });
 
@@ -41,10 +43,11 @@ function GameScreen() {
 
 export default function App() {
   const [recoveryKey, setRecoveryKey] = useState(0);
+  const [runtimeConfig] = useState(() => selectRuntimeConfig(window.location.search, import.meta.env.DEV));
 
   return (
     <GameErrorBoundary key={recoveryKey} onRestart={() => setRecoveryKey((key) => key + 1)}>
-      <GameScreen />
+      <GameScreen config={runtimeConfig} />
     </GameErrorBoundary>
   );
 }
