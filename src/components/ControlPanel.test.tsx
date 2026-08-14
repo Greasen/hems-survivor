@@ -53,6 +53,15 @@ describe('ControlPanel', () => {
     expect(screen.getByRole('button', { name: 'EV 充电' })).toHaveAttribute('aria-pressed', 'false');
   });
 
+  it('exposes both Grid switch labels as full-row touch targets', () => {
+    const { container } = render(<ControlPanel state={stateAt()} onAction={vi.fn()} />);
+    const switchLabels = container.querySelectorAll('label.grid-switch');
+    expect(switchLabels).toHaveLength(2);
+    for (const label of switchLabels) {
+      expect(label.querySelector('input[role="switch"]')).toBeInTheDocument();
+    }
+  });
+
   it('disables both grid switches with a visible reason when grid is closed', () => {
     render(<ControlPanel state={stateAt({ grid: { buyEnabled: true, sellEnabled: true, available: false } })} onAction={vi.fn()} />);
     expect(screen.getByRole('switch', { name: '允许买电' })).toBeDisabled();

@@ -63,7 +63,7 @@ export function ControlPanel({ state, onAction }: ControlPanelProps) {
 
       <fieldset>
         <legend>Grid 控制</legend>
-        <label className="control-group control-group--two">
+        <label className="grid-switch">
           <input
             type="checkbox"
             role="switch"
@@ -74,7 +74,7 @@ export function ControlPanel({ state, onAction }: ControlPanelProps) {
           />
           允许买电
         </label>
-        <label className="control-group control-group--two">
+        <label className="grid-switch">
           <input
             type="checkbox"
             role="switch"
