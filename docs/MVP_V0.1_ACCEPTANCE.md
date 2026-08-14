@@ -30,6 +30,7 @@
 | 360×800 和 390×844 无横向滚动 | E2E `plays, pauses, upgrades, and restarts without horizontal overflow` | 自动化通过（双视口） |
 | 核心控件在手机视口内且可触控 | E2E `keeps mobile controls and dialogs usable at touch size`、布局几何断言 | 自动化通过（双视口） |
 | 页面后台自动暂停且不补算 | `src/hooks/useGameController.test.tsx`：visibility change、卸载清理和不追赶时间 | 自动化通过 |
+| 构建和全部测试通过 | `npm test`：15 个测试文件、147/147 tests passed；`npm run e2e`：10/10 tests passed（mobile-360、mobile-390）；`npm run build`：TypeScript/Vite production build 通过 | 自动化通过 |
 | production build 使用标准规则 | `src/game/runtimeConfig.test.ts`：非 DEV 始终返回 `standardConfig`；`npm run build` | 自动化通过 |
 | `testMode` 仅 DEV 生效 | `src/game/runtimeConfig.test.ts`：production 忽略 `testMode`，DEV 才选择加速配置 | 自动化通过 |
 | 刷新无存档并开启新局 | `src/App.test.tsx`、`src/hooks/useGameController.test.tsx`：restart 清理状态并生成新 seed | 自动化通过；真机刷新未执行 |
