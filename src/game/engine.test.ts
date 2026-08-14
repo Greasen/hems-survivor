@@ -78,6 +78,30 @@ describe('game engine', () => {
     expect(failure.lastReport?.reasons.map((item) => item.code)).toContain('eventFailure:evEmergency');
   });
 
+  it('settles EV emergency success at the epsilon boundary and mirrors it in report moments', () => {
+    const input = stateAt({ tick: 104, ev: { ...stateAt().ev, level: 45 - 2.84e-14, mode: 'paused' }, event: { kind: 'evEmergency', stage: 'active', startsAt: 60, endsAt: 105, allHomeSupplied: true, targetEvLevel: 45 } });
+    const scoringConfig = { ...standardConfig, score: { ...standardConfig.score, survivalPerTick: 0, solarDirectPerUnit: 0 } };
+    const result = runTick(input, scoringConfig);
+    expect(result.resources.score - input.resources.score).toBe(150);
+    expect(result.resources.family).toBe(input.resources.family);
+    expect(result.lastReport?.reasons.map((item) => item.code)).toContain('eventSuccess:evEmergency');
+    expect(result.lastReport?.reasons.map((item) => item.code)).not.toContain('eventFailure:evEmergency');
+    expect(result.keyMoments.map((item) => item.code)).toContain('eventSuccess:evEmergency');
+    expect(result.keyMoments.map((item) => item.code)).not.toContain('eventFailure:evEmergency');
+  });
+
+  it('settles EV emergency failure beyond epsilon and mirrors the penalty in report moments', () => {
+    const input = stateAt({ tick: 104, ev: { ...stateAt().ev, level: 45 - 1.1e-6, mode: 'paused' }, event: { kind: 'evEmergency', stage: 'active', startsAt: 60, endsAt: 105, allHomeSupplied: true, targetEvLevel: 45 } });
+    const scoringConfig = { ...standardConfig, score: { ...standardConfig.score, survivalPerTick: 0, solarDirectPerUnit: 0 } };
+    const result = runTick(input, scoringConfig);
+    expect(result.resources.score).toBe(input.resources.score);
+    expect(result.resources.family).toBe(input.resources.family - 15);
+    expect(result.lastReport?.reasons.map((item) => item.code)).toContain('eventFailure:evEmergency');
+    expect(result.lastReport?.reasons.map((item) => item.code)).not.toContain('eventSuccess:evEmergency');
+    expect(result.keyMoments.map((item) => item.code)).toContain('eventFailure:evEmergency');
+    expect(result.keyMoments.map((item) => item.code)).not.toContain('eventSuccess:evEmergency');
+  });
+
   it('keeps the key-moment window bounded and de-duplicates same-tick reasons', () => {
     const entries = appendKeyMoments([], Array.from({ length: 25 }, (_, index) => ({ code: `reason${index}`, tick: index })), 20);
     expect(entries).toHaveLength(20);

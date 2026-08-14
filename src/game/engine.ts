@@ -1,4 +1,4 @@
-import { advanceEventBeforeEnergy, eventModifiers, isGridAvailable, resolveEventAfterEnergy } from './events';
+import { advanceEventBeforeEnergy, eventModifiers, isEvTargetSatisfied, isGridAvailable, resolveEventAfterEnergy } from './events';
 import { settleEnergy } from './energy';
 import { randomBetween } from './random';
 import { applyTickResources } from './scoring';
@@ -84,7 +84,7 @@ function appendReason(reasons: ReasonEntry[], entry: ReasonEntry): void {
 
 function eventOutcome(event: EventRuntime, state: GameState): 'success' | 'failure' | null {
   if (event.kind === 'familyLoad') return event.allHomeSupplied ? 'success' : 'failure';
-  if (event.kind === 'evEmergency') return state.ev.level >= (event.targetEvLevel ?? state.ev.level) ? 'success' : 'failure';
+  if (event.kind === 'evEmergency') return isEvTargetSatisfied(state.ev.level, event.targetEvLevel ?? state.ev.level) ? 'success' : 'failure';
   return null;
 }
 
