@@ -1,15 +1,8 @@
 import { StrictMode, type ReactNode } from 'react';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { acceleratedConfig, createInitialState, standardConfig } from '../game';
-import type { GameState } from '../game';
-import {
-  GAME_SESSION_SCHEMA_VERSION,
-  GAME_SESSION_STORAGE_KEY,
-  loadGameSession,
-  saveGameSession,
-  useGameController,
-} from './useGameController';
+import { acceleratedConfig, standardConfig } from '../game';
+import { useGameController } from './useGameController';
 
 function testConfig(overrides: Partial<typeof standardConfig> = {}) {
   return { ...standardConfig, tickMs: 100, ...overrides };
@@ -108,58 +101,6 @@ describe('useGameController', () => {
     expect(result.current.state.seed).toBe(1);
   });
 
-  it('restores a saved run as paused without catching up elapsed wall time', () => {
-    vi.useFakeTimers();
-    const saved = { ...createInitialState(12), status: 'running' as const, tick: 7 };
-    saveGameSession(saved);
-
-    const { result } = renderHook(() => useGameController(testConfig()));
-    expect(result.current.state.status).toBe('paused');
-    expect(result.current.state.tick).toBe(7);
-
-    act(() => vi.advanceTimersByTime(1_000));
-    expect(result.current.state.tick).toBe(7);
-  });
-
-  it('saves every changed state with the current schema version', () => {
-    const setItem = vi.spyOn(Storage.prototype, 'setItem');
-    const { result } = renderHook(() => useGameController(standardConfig));
-
-    act(() => result.current.dispatch({ type: 'start' }));
-    const latest = JSON.parse(setItem.mock.calls.at(-1)?.[1] ?? '{}') as { version?: number; state?: GameState };
-
-    expect(latest.version).toBe(GAME_SESSION_SCHEMA_VERSION);
-    expect(latest.state?.status).toBe('running');
-    expect(latest.state?.seed).toBe(result.current.state.seed);
-  });
-
-  it('rejects invalid and unsupported saved data and falls back to a ready state', () => {
-    localStorage.setItem(GAME_SESSION_STORAGE_KEY, '{not-json');
-    expect(loadGameSession()).toBeNull();
-    const first = renderHook(() => useGameController(standardConfig));
-    expect(first.result.current.state.status).toBe('ready');
-    first.unmount();
-
-    localStorage.setItem(GAME_SESSION_STORAGE_KEY, JSON.stringify({ version: 999, state: createInitialState(8) }));
-    expect(loadGameSession()).toBeNull();
-    const second = renderHook(() => useGameController(standardConfig));
-    expect(second.result.current.state.status).toBe('ready');
-  });
-
-  it('does not crash when storage reads and writes are unavailable', () => {
-    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
-      throw new Error('blocked');
-    });
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
-      throw new Error('blocked');
-    });
-
-    expect(() => {
-      const { result } = renderHook(() => useGameController(standardConfig));
-      act(() => result.current.dispatch({ type: 'start' }));
-    }).not.toThrow();
-  });
-
   it('cleans the timer and visibility listener on unmount', () => {
     vi.useFakeTimers();
     const clearIntervalSpy = vi.spyOn(window, 'clearInterval');
@@ -171,8 +112,7 @@ describe('useGameController', () => {
     expect(clearIntervalSpy).toHaveBeenCalled();
   });
 
-  it('does not restore a session when an explicit URL seed is supplied', () => {
-    saveGameSession({ ...createInitialState(99), status: 'running' as const, tick: 4 });
+  it('uses an explicit URL seed for a fresh state', () => {
     replaceSearch('?seed=44');
 
     const { result } = renderHook(() => useGameController(standardConfig));
@@ -180,6 +120,16 @@ describe('useGameController', () => {
     expect(result.current.state.seed).toBe(44);
     expect(result.current.state.tick).toBe(0);
     expect(result.current.state.status).toBe('ready');
+  });
+
+  it('starts a fresh ready state after the hook is remounted', () => {
+    const first = renderHook(() => useGameController(standardConfig));
+    act(() => first.result.current.dispatch({ type: 'start' }));
+    first.unmount();
+
+    const second = renderHook(() => useGameController(standardConfig));
+    expect(second.result.current.state.status).toBe('ready');
+    expect(second.result.current.state.tick).toBe(0);
   });
 
   it('supports an accelerated config without changing controller semantics', () => {
