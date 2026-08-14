@@ -1,0 +1,19 @@
+import { defineConfig, devices } from '@playwright/test';
+
+export default defineConfig({
+  testDir: './e2e',
+  webServer: {
+    command: 'npm run dev -- --host 127.0.0.1 --port 4173',
+    url: 'http://127.0.0.1:4173',
+    reuseExistingServer: !Boolean(
+      (globalThis as { process?: { env?: { CI?: string } } }).process?.env?.CI,
+    ),
+  },
+  use: {
+    baseURL: 'http://127.0.0.1:4173',
+  },
+  projects: [
+    { name: 'pixel-5-360', use: { ...devices['Pixel 5'], viewport: { width: 360, height: 800 } } },
+    { name: 'pixel-5-390', use: { ...devices['Pixel 5'], viewport: { width: 390, height: 844 } } },
+  ],
+});
