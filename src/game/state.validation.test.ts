@@ -28,7 +28,7 @@ describe('assertValidState', () => {
     ['lastReport.reasons', (state: GameState) => { state.lastReport = { tick: 0, phase: 'safe', solar: 0, home: 0, buyPrice: 0, sellPrice: 0, flows: [], unmetHome: 0, outageTicks: 0, curtailed: 0, reasons: [{ code: 'old', tick: 1 }] }; }],
     ['keyMoments', (state: GameState) => { state.keyMoments = [{ code: 'future', tick: 1 }]; }],
     ['pendingUpgrades', (state: GameState) => { state.pendingUpgrades = ['battery_power']; }],
-    ['triggeredUpgradeTicks', (state: GameState) => { state.triggeredUpgradeTicks = [90, 180]; state.tick = 100; }],
+    ['triggeredUpgradeTicks', (state: GameState) => { state.triggeredUpgradeTicks = [90, 180]; state.status = 'running'; state.tick = 100; }],
     ['gameOverReason', (state: GameState) => { state.gameOverReason = 'familyDepleted'; }],
   ] as const)('rejects invalid %s with a diagnostic field', (_field, mutate) => {
     expect(() => assertValidState(stateWith(mutate), standardConfig)).toThrow(new RegExp(_field.replace('.', '\\.')));
@@ -42,7 +42,7 @@ describe('public engine boundaries validate before early returns', () => {
   });
 
   it('rejects an invalid state even when dispatchAction would ignore the action', () => {
-    const input = stateAt({ status: 'victory', resources: { money: -1, family: 100, score: 0 } });
+    const input = stateAt({ status: 'victory', tick: standardConfig.durationTicks, resources: { money: -1, family: 100, score: 0 } });
     expect(() => dispatchAction(input, { type: 'pause' }, standardConfig)).toThrow(/resources\.money/);
   });
 
@@ -60,6 +60,46 @@ describe('public engine boundaries validate before early returns', () => {
     expect(() => assertValidState(active, standardConfig)).toThrow(/targetEvLevel/);
     const warning = stateAt({ tick: 5, event: { kind: 'evEmergency', stage: 'warning', startsAt: 10, endsAt: 30, allHomeSupplied: true, targetEvLevel: 45 } });
     expect(() => assertValidState(warning, standardConfig)).toThrow(/targetEvLevel/);
+  });
+
+  it.each([
+    ['ready', 1],
+    ['running', standardConfig.durationTicks],
+    ['paused', standardConfig.durationTicks],
+    ['choosingUpgrade', standardConfig.durationTicks],
+    ['victory', 0],
+  ] as const)('rejects status %s at invalid tick %i', (status, tick) => {
+    const pendingUpgrades = status === 'choosingUpgrade' ? ['battery_power', 'solar_optimizer', 'home_efficiency'] as const : [];
+    const gameOverReason = null;
+    expect(() => assertValidState(stateAt({ status, tick, pendingUpgrades: [...pendingUpgrades], gameOverReason }), standardConfig)).toThrow(/status|tick/);
+  });
+
+  it('requires event warning state to clear the next warning and stay before crisis', () => {
+    const withWarning = stateAt({ tick: 57, nextEventWarningAt: 58, event: { kind: 'cloudy', stage: 'warning', startsAt: 60, endsAt: 85, allHomeSupplied: true, targetEvLevel: null } });
+    expect(() => assertValidState(withWarning, standardConfig)).toThrow(/nextEventWarningAt/);
+    const atCrisisBoundary = stateAt({ tick: 299, event: { kind: 'cloudy', stage: 'active', startsAt: 295, endsAt: 300, allHomeSupplied: true, targetEvLevel: null } });
+    expect(() => assertValidState(atCrisisBoundary, standardConfig)).not.toThrow();
+    const acrossCrisis = stateAt({ tick: 299, event: { kind: 'cloudy', stage: 'active', startsAt: 295, endsAt: 301, allHomeSupplied: true, targetEvLevel: null } });
+    expect(() => assertValidState(acrossCrisis, standardConfig)).toThrow(/event/);
+  });
+
+  it('requires report reasons to belong to the report tick', () => {
+    const state = stateAt({ tick: 2, lastReport: { tick: 2, phase: 'safe', solar: 0, home: 0, buyPrice: 0, sellPrice: 0, flows: [], unmetHome: 0, outageTicks: 0, curtailed: 0, reasons: [{ code: 'old', tick: 1 }] } });
+    expect(() => assertValidState(state, standardConfig)).toThrow(/reasons/);
+  });
+
+  it('rejects a crisis report for standard Tick 1', () => {
+    const state = stateAt({ tick: 1, lastReport: { tick: 1, phase: 'crisis', solar: 0, home: 0, buyPrice: 0, sellPrice: 0, flows: [], unmetHome: 0, outageTicks: 0, curtailed: 0, reasons: [] } });
+    expect(() => assertValidState(state, standardConfig)).toThrow(/lastReport\.phase/);
+  });
+
+  it('rejects oversized, descending, or duplicate key moments', () => {
+    const tooMany = stateAt({ tick: 21, keyMoments: Array.from({ length: 21 }, (_, index) => ({ code: `m${index}`, tick: index })) });
+    expect(() => assertValidState(tooMany, standardConfig)).toThrow(/keyMoments/);
+    const descending = stateAt({ tick: 2, keyMoments: [{ code: 'a', tick: 2 }, { code: 'b', tick: 1 }] });
+    expect(() => assertValidState(descending, standardConfig)).toThrow(/keyMoments/);
+    const duplicate = stateAt({ tick: 1, keyMoments: [{ code: 'a', tick: 1 }, { code: 'a', tick: 1, amount: 2 }] });
+    expect(() => assertValidState(duplicate, standardConfig)).toThrow(/keyMoments/);
   });
 
   it('accepts legal zero-valued report fields and fractional state resources', () => {

@@ -18,6 +18,12 @@ describe('game engine', () => {
     expect(result.lastReport!.flows.length).toBeGreaterThan(0);
   });
 
+  it('maps a custom phase name into the structured report', () => {
+    const config = { ...standardConfig, phase: standardConfig.phase.map((phase, index) => ({ ...phase, name: `warmup-${index}` })) };
+    const result = runTick(stateAt(), config);
+    expect(result.lastReport?.phase).toBe('warmup-0');
+  });
+
   it.each([
     [1, 'safe'],
     [60, 'safe'],
