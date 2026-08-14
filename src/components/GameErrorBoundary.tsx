@@ -3,6 +3,7 @@ import { Component, type ErrorInfo, type ReactNode } from 'react';
 interface GameErrorBoundaryProps {
   children: ReactNode;
   onRestart: () => void;
+  onError?: (error: Error) => void;
 }
 
 interface GameErrorBoundaryState {
@@ -16,8 +17,8 @@ export class GameErrorBoundary extends Component<GameErrorBoundaryProps, GameErr
     return { error };
   }
 
-  componentDidCatch(_error: Error, _errorInfo: ErrorInfo): void {
-    // The fallback itself is the recoverable production surface.
+  componentDidCatch(error: Error, _errorInfo: ErrorInfo): void {
+    this.props.onError?.(error);
   }
 
   render() {

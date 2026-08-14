@@ -50,6 +50,18 @@ describe('UpgradeOverlay', () => {
     expect(onChoose).toHaveBeenCalledOnce();
     expect(onChoose).toHaveBeenCalledWith('battery_capacity');
   });
+
+  it('locks all choices after the first rapid selection', async () => {
+    const onChoose = vi.fn();
+    const user = userEvent.setup();
+    render(<UpgradeOverlay choices={['battery_capacity', 'solar_optimizer', 'grid_contract']} onChoose={onChoose} />);
+    const buttons = screen.getAllByRole('button', { name: /选择/ });
+    await user.dblClick(buttons[0]);
+    await user.click(buttons[1]);
+    expect(onChoose).toHaveBeenCalledOnce();
+    expect(onChoose).toHaveBeenCalledWith('battery_capacity');
+    expect(buttons.every((button) => button.hasAttribute('disabled'))).toBe(true);
+  });
 });
 
 describe('PauseOverlay', () => {
@@ -75,7 +87,11 @@ describe('ResultOverlay', () => {
       ev: { level: 44.444, capacity: 80, chargePower: 0.6, mode: 'paused' },
       resources: { money: 98.765, family: 88.888, score: 123.4 },
       selectedUpgrades: ['battery_capacity', 'grid_contract'],
-      keyMoments: [{ code: 'eventSuccess:familyLoad', tick: 123 }],
+      keyMoments: [
+        { code: 'eventSuccess:familyLoad', tick: 123 },
+        { code: 'moneySpent', amount: -2.4, tick: 124 },
+        { code: 'upgradeSelected:battery_capacity', tick: 125 },
+      ],
     });
     render(<ResultOverlay state={state} onRestart={onRestart} />);
     expect(screen.getByRole('dialog', { name: '胜利' })).toBeInTheDocument();
@@ -87,7 +103,12 @@ describe('ResultOverlay', () => {
     expect(screen.getByText('扩容电芯')).toBeInTheDocument();
     expect(screen.getByText('电网合约')).toBeInTheDocument();
     expect(screen.getByText(/最近关键时刻/)).toBeInTheDocument();
-    expect(screen.getByText(/eventSuccess:familyLoad/)).toBeInTheDocument();
+    expect(screen.getByText(/家庭负载上升成功/)).toBeInTheDocument();
+    expect(screen.getByText(/支付电费/)).toBeInTheDocument();
+    expect(screen.getByText(/已选择升级：扩容电芯/)).toBeInTheDocument();
+    expect(screen.queryByText('eventSuccess:familyLoad')).not.toBeInTheDocument();
+    expect(screen.queryByText('moneySpent')).not.toBeInTheDocument();
+    expect(screen.queryByText('upgradeSelected:battery_capacity')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '重新开始' }));
     expect(onRestart).toHaveBeenCalledOnce();
   });
@@ -114,10 +135,13 @@ describe('GameErrorBoundary', () => {
 
   it('offers a clean restart after an unrecoverable render error', async () => {
     const onRestart = vi.fn();
+    const onError = vi.fn();
     const user = userEvent.setup();
-    render(<GameErrorBoundary onRestart={onRestart}><BrokenChild /></GameErrorBoundary>);
+    render(<GameErrorBoundary onRestart={onRestart} onError={onError}><BrokenChild /></GameErrorBoundary>);
     expect(screen.getByRole('heading', { name: '游戏状态异常' })).toBeInTheDocument();
     expect(screen.getByText('游戏已暂停，请重新开始本局。')).toBeInTheDocument();
+    expect(onError).toHaveBeenCalledOnce();
+    expect(onError).toHaveBeenCalledWith(expect.objectContaining({ message: 'broken state' }));
     await user.click(screen.getByRole('button', { name: '重新开始' }));
     expect(onRestart).toHaveBeenCalledOnce();
   });
