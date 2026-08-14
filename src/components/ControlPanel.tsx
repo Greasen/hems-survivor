@@ -1,9 +1,11 @@
-import type { BatteryMode, EvMode, GameState, PlayerAction } from '../game/types';
+import type { BatteryMode, EvMode, GameConfig, GameState, PlayerAction } from '../game/types';
+import { standardConfig } from '../game/config';
 import { getGridReopenCountdown } from './RiskPanel';
 
 interface ControlPanelProps {
   state: GameState;
   onAction: (action: PlayerAction) => void;
+  config?: GameConfig;
 }
 
 const batteryModes: readonly [BatteryMode, string][] = [
@@ -17,10 +19,10 @@ const evModes: readonly [EvMode, string][] = [
   ['charging', '充电'],
 ];
 
-export function ControlPanel({ state, onAction }: ControlPanelProps) {
+export function ControlPanel({ state, onAction, config = standardConfig }: ControlPanelProps) {
   const gridUnavailable = !state.grid.available;
   const buyUnavailable = gridUnavailable || state.resources.money <= 0;
-  const reopenIn = gridUnavailable ? getGridReopenCountdown(state) : null;
+  const reopenIn = gridUnavailable ? getGridReopenCountdown(state, config) : null;
   const gridReason = gridUnavailable
     ? (reopenIn === null ? '电网关闭' : `电网将在 ${reopenIn} 秒后重新开放`)
     : state.resources.money <= 0 ? '余额不足' : null;

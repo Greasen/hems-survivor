@@ -2,6 +2,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { RiskPanel } from './RiskPanel';
 import { stateAt } from '../test/fixtures';
+import { standardConfig } from '../game/config';
 
 describe('RiskPanel', () => {
   afterEach(cleanup);
@@ -83,5 +84,38 @@ describe('RiskPanel', () => {
   it('exposes risk text semantically instead of relying on color', () => {
     render(<RiskPanel state={stateAt({ outageTicks: 10 })} />);
     expect(screen.getByRole('alert')).toHaveTextContent('持续断电风险');
+  });
+
+  it('shows the exact sustained-outage countdown for every positive outage tick', () => {
+    const config = { ...standardConfig, family: { ...standardConfig.family, sustainedOutageTicks: 10, }, battery: { ...standardConfig.battery, autoReserve: 40 } };
+    const { rerender } = render(<RiskPanel state={stateAt({ outageTicks: 1 })} config={config} />);
+    expect(screen.getByRole('alert')).toHaveTextContent('距持续断电失败 9 秒');
+    rerender(<RiskPanel state={stateAt({ outageTicks: 9 })} config={config} />);
+    expect(screen.getByRole('alert')).toHaveTextContent('距持续断电失败 1 秒');
+  });
+
+  it('uses custom reserve and crisis thresholds', () => {
+    const config = { ...standardConfig, crisisStartTick: 200, battery: { ...standardConfig.battery, autoReserve: 40 } };
+    render(<RiskPanel state={stateAt({ tick: 211, battery: { ...stateAt().battery, level: 40 }, grid: { buyEnabled: true, sellEnabled: true, available: false } })} config={config} />);
+    expect(screen.getByRole('alert')).toHaveTextContent('电池已达储备线');
+    expect(screen.getByText('电网将在 10 秒后重新开放')).toBeInTheDocument();
+  });
+
+  it('only shows deadline risk for unsatisfied family or EV active objectives', () => {
+    const base = { resources: { money: 0, family: 80, score: 0 }, battery: { ...stateAt().battery, level: 50 }, tick: 64 };
+    const { rerender } = render(<RiskPanel state={stateAt({ ...base, event: { kind: 'cloudy', stage: 'active', startsAt: 60, endsAt: 65, allHomeSupplied: true, targetEvLevel: null } })} />);
+    expect(screen.getByRole('alert')).toHaveTextContent('余额为零');
+    rerender(<RiskPanel state={stateAt({ ...base, event: { kind: 'familyLoad', stage: 'active', startsAt: 60, endsAt: 65, allHomeSupplied: true, targetEvLevel: null } })} />);
+    expect(screen.getByRole('alert')).toHaveTextContent('事件即将结束');
+    rerender(<RiskPanel state={stateAt({ ...base, event: { kind: 'familyLoad', stage: 'active', startsAt: 60, endsAt: 65, allHomeSupplied: false, targetEvLevel: null } })} />);
+    expect(screen.getByRole('alert')).toHaveTextContent('余额为零');
+  });
+
+  it('keeps the latest milestone as Chinese live feedback after settlement and upgrade selection', () => {
+    const { rerender } = render(<RiskPanel state={stateAt({ keyMoments: [{ code: 'eventEnded:cloudy', tick: 90 }, { code: 'cloudyRestored', tick: 90 }] })} />);
+    expect(screen.getByLabelText('最近反馈')).toHaveTextContent('阴天影响恢复');
+    rerender(<RiskPanel state={stateAt({ keyMoments: [{ code: 'upgradeSelected:battery_power', tick: 125 }] })} />);
+    expect(screen.getByLabelText('最近反馈')).toHaveTextContent('已选择升级：高功率逆变器');
+    expect(screen.getByLabelText('最近反馈')).not.toHaveTextContent('upgradeSelected');
   });
 });

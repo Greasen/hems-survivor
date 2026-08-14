@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ControlPanel } from './ControlPanel';
 import { stateAt } from '../test/fixtures';
 import type { PlayerAction } from '../game/types';
+import { standardConfig } from '../game/config';
 
 describe('ControlPanel', () => {
   afterEach(cleanup);
@@ -81,5 +82,11 @@ describe('ControlPanel', () => {
     expect(screen.getByText('电网将在 10 秒后重新开放')).toBeInTheDocument();
     rerender(<ControlPanel state={stateAt({ tick: 320, grid: { buyEnabled: true, sellEnabled: true, available: false } })} onAction={vi.fn()} />);
     expect(screen.getByText('电网将在 1 秒后重新开放')).toBeInTheDocument();
+  });
+
+  it('uses the supplied runtime config for crisis grid countdown', () => {
+    const config = { ...standardConfig, crisisStartTick: 200 };
+    render(<ControlPanel state={stateAt({ tick: 211, grid: { buyEnabled: true, sellEnabled: true, available: false } })} onAction={vi.fn()} config={config} />);
+    expect(screen.getByText('电网将在 10 秒后重新开放')).toBeInTheDocument();
   });
 });

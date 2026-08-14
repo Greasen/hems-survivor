@@ -1,4 +1,5 @@
 import type { GameState, FlowNode } from '../game/types';
+import { upgradeText } from '../game/upgrades';
 
 interface EnergyBoardProps {
   state: GameState;
@@ -13,7 +14,7 @@ const labels: Record<FlowNode, string> = {
   curtailed: '弃电',
 };
 
-const formatValue = (value: number): string => value.toFixed(1);
+const formatValue = (value: number): string => (Math.round((value + Number.EPSILON) * 10) / 10).toFixed(1);
 
 export function EnergyBoard({ state }: EnergyBoardProps) {
   const report = state.lastReport;
@@ -36,11 +37,14 @@ export function EnergyBoard({ state }: EnergyBoardProps) {
         <h2>Battery</h2>
         <p>{formatValue(state.battery.level)} / {formatValue(state.battery.capacity)}</p>
         <p>模式 {state.battery.mode}</p>
+        <p>充电功率 {formatValue(state.battery.chargePower)}</p>
+        <p>放电功率 {formatValue(state.battery.dischargePower)}</p>
       </section>
       <section className="energy-card energy-card--ev" aria-label="EV 电量">
         <h2>EV</h2>
         <p>{formatValue(state.ev.level)} / {formatValue(state.ev.capacity)}</p>
         <p>模式 {state.ev.mode}</p>
+        <p>充电功率 {formatValue(state.ev.chargePower)}</p>
       </section>
       <section className="energy-card energy-card--grid" aria-label="Grid 状态">
         <h2>Grid</h2>
@@ -56,6 +60,16 @@ export function EnergyBoard({ state }: EnergyBoardProps) {
             </li>
           ))}
         </ul>
+      ) : null}
+      {state.selectedUpgrades.length > 0 ? (
+        <section className="energy-upgrades" aria-label="已选升级效果">
+          <h2>已选升级</h2>
+          <ul>
+            {state.selectedUpgrades.map((upgrade) => (
+              <li key={upgrade}><span>{upgradeText[upgrade].name}</span><p>{upgradeText[upgrade].description}</p></li>
+            ))}
+          </ul>
+        </section>
       ) : null}
     </div>
   );

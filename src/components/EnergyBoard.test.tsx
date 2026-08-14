@@ -52,4 +52,19 @@ describe('EnergyBoard', () => {
     rerender(<EnergyBoard state={{ ...state, lastReport: null }} />);
     expect(screen.queryByText('暂无能源流')).not.toBeInTheDocument();
   });
+
+  it('shows selected upgrade descriptions and live power values', () => {
+    const state = stateAt({
+      selectedUpgrades: ['battery_power', 'ev_fast_charge'],
+      battery: { ...stateAt().battery, chargePower: 1.35, dischargePower: 1.35 },
+      ev: { ...stateAt().ev, chargePower: 0.85 },
+    });
+    render(<EnergyBoard state={state} />);
+    expect(screen.getByText('高功率逆变器')).toBeInTheDocument();
+    expect(screen.getByText('Battery 充放电功率各 +0.35')).toBeInTheDocument();
+    expect(screen.getByText('EV 快充')).toBeInTheDocument();
+    expect(screen.getByLabelText('Battery 电量')).toHaveTextContent('充电功率 1.4');
+    expect(screen.getByLabelText('Battery 电量')).toHaveTextContent('放电功率 1.4');
+    expect(screen.getByLabelText('EV 电量')).toHaveTextContent('充电功率 0.9');
+  });
 });

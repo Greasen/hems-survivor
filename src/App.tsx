@@ -23,8 +23,8 @@ function GameScreen({ config }: { config: GameConfig }) {
         <h1 className="sr-only">电量守卫</h1>
         <StatusBar state={game.state} onPause={() => game.dispatch({ type: 'pause' })} />
         <EnergyBoard state={game.state} />
-        <RiskPanel state={game.state} />
-        <ControlPanel state={game.state} onAction={game.dispatch} />
+        <RiskPanel state={game.state} config={config} />
+        <ControlPanel state={game.state} onAction={game.dispatch} config={config} />
         {game.state.status === 'ready' && <StartOverlay onStart={() => game.dispatch({ type: 'start' })} />}
         {game.state.status === 'paused' && <PauseOverlay onResume={() => game.dispatch({ type: 'resume' })} />}
         {game.state.status === 'choosingUpgrade' && (
