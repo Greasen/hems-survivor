@@ -146,7 +146,7 @@ export function assertValidConfig(config: GameConfig): void {
     integer(`events.${kind}.duration`, config.events[kind].duration);
     if (config.events[kind].duration <= 0) invalid(`events.${kind}.duration`, 'must be greater than 0');
   }
-  if (!(['cloudy', 'peakPrice', 'familyLoad', 'evEmergency'] as const).some((kind) => config.events[kind].warning === 5)) {
+  if (config.crisisStartTick > 55 && !(['cloudy', 'peakPrice', 'familyLoad', 'evEmergency'] as const).some((kind) => config.events[kind].warning === 5)) {
     invalid('events', 'at least one event warning must equal 5 for the first event pool');
   }
 

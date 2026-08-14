@@ -5,6 +5,7 @@ import type { GameConfig, GameState } from '../game/types';
 export function stateAt(overrides: Partial<GameState> = {}): GameState {
   const state: GameState = { ...createInitialState(12345), status: 'running', ...overrides };
   if (state.event && overrides.nextEventWarningAt === undefined) state.nextEventWarningAt = null;
+  if (state.nextEventWarningAt !== null && state.nextEventWarningAt < state.tick && overrides.nextEventWarningAt === undefined) state.nextEventWarningAt = null;
   return state;
 }
 

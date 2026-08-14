@@ -24,6 +24,22 @@ describe('game engine', () => {
     expect(result.lastReport?.phase).toBe('warmup-0');
   });
 
+  it('completes a config with crisis at Tick 55 and no warning-5 event pool', () => {
+    const config = {
+      ...standardConfig,
+      crisisStartTick: 55,
+      events: Object.fromEntries(Object.entries(standardConfig.events).map(([kind, event]) => [kind, { ...event, warning: 10 }])) as typeof standardConfig.events,
+    };
+    let state = dispatchAction(createInitialState(123, config), { type: 'start' }, config);
+    while (state.status === 'running' || state.status === 'choosingUpgrade') {
+      state = state.status === 'choosingUpgrade'
+        ? dispatchAction(state, { type: 'chooseUpgrade', upgrade: state.pendingUpgrades[0] }, config)
+        : runTick(state, config);
+    }
+    expect(state.status).toBe('victory');
+    expect(state.nextEventWarningAt).toBeNull();
+  });
+
   it.each([
     [1, 'safe'],
     [60, 'safe'],

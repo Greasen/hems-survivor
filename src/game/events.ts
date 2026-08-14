@@ -140,7 +140,8 @@ export function resolveEventAfterEnergy(
   const max = pressure ? config.eventCooldown.pressureMax : config.eventCooldown.learningMax;
   const cooldown = randomBetween(state.randomState, min, max + 1);
   state.randomState = cooldown.state;
-  state.nextEventWarningAt = nextTick + Math.floor(cooldown.value);
+  const candidateWarning = nextTick + Math.floor(cooldown.value);
+  state.nextEventWarningAt = candidateWarning < config.crisisStartTick && candidateWarning <= config.durationTicks ? candidateWarning : null;
   return state;
 }
 

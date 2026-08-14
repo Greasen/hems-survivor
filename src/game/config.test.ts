@@ -58,4 +58,12 @@ describe('assertValidConfig', () => {
     });
     expect(() => assertValidConfig(config)).not.toThrow();
   });
+
+  it('accepts a crisis at or before Tick 55 without a warning-5 event pool', () => {
+    const config = configWith((value) => {
+      value.crisisStartTick = 55;
+      value.events = Object.fromEntries(Object.entries(value.events).map(([kind, event]) => [kind, { ...event, warning: 10 }])) as GameConfig['events'];
+    });
+    expect(() => assertValidConfig(config)).not.toThrow();
+  });
 });

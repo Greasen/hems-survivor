@@ -8,6 +8,7 @@ import type { GameState } from './types';
 function stateWith(mutator: (state: GameState) => void): GameState {
   const state = structuredClone(createInitialState(123)) as GameState;
   mutator(state);
+  if (state.nextEventWarningAt !== null && state.nextEventWarningAt < state.tick) state.nextEventWarningAt = null;
   return state;
 }
 
@@ -29,6 +30,8 @@ describe('assertValidState', () => {
     ['keyMoments', (state: GameState) => { state.keyMoments = [{ code: 'future', tick: 1 }]; }],
     ['pendingUpgrades', (state: GameState) => { state.pendingUpgrades = ['battery_power']; }],
     ['triggeredUpgradeTicks', (state: GameState) => { state.triggeredUpgradeTicks = [90, 180]; state.status = 'running'; state.tick = 100; }],
+    ['triggeredUpgradeTicks', (state: GameState) => { state.triggeredUpgradeTicks = [180, 90]; state.status = 'running'; state.tick = 180; }],
+    ['triggeredUpgradeTicks', (state: GameState) => { state.triggeredUpgradeTicks = [90]; state.status = 'running'; state.tick = 100; }],
     ['gameOverReason', (state: GameState) => { state.gameOverReason = 'familyDepleted'; }],
   ] as const)('rejects invalid %s with a diagnostic field', (_field, mutate) => {
     expect(() => assertValidState(stateWith(mutate), standardConfig)).toThrow(new RegExp(_field.replace('.', '\\.')));
@@ -81,6 +84,8 @@ describe('public engine boundaries validate before early returns', () => {
     expect(() => assertValidState(atCrisisBoundary, standardConfig)).not.toThrow();
     const acrossCrisis = stateAt({ tick: 299, event: { kind: 'cloudy', stage: 'active', startsAt: 295, endsAt: 301, allHomeSupplied: true, targetEvLevel: null } });
     expect(() => assertValidState(acrossCrisis, standardConfig)).toThrow(/event/);
+    expect(() => assertValidState(stateAt({ tick: 58, nextEventWarningAt: 57 }), standardConfig)).toThrow(/nextEventWarningAt/);
+    expect(() => assertValidState(stateAt({ tick: 58, nextEventWarningAt: 300 }), standardConfig)).toThrow(/nextEventWarningAt/);
   });
 
   it('requires report reasons to belong to the report tick', () => {
@@ -100,6 +105,21 @@ describe('public engine boundaries validate before early returns', () => {
     expect(() => assertValidState(descending, standardConfig)).toThrow(/keyMoments/);
     const duplicate = stateAt({ tick: 1, keyMoments: [{ code: 'a', tick: 1 }, { code: 'a', tick: 1, amount: 2 }] });
     expect(() => assertValidState(duplicate, standardConfig)).toThrow(/keyMoments/);
+  });
+
+  it('requires choosingUpgrade to be at its latest trigger and gameOver to have a positive tick', () => {
+    const pseudoChoosing = stateAt({ status: 'choosingUpgrade', tick: 1, pendingUpgrades: ['battery_power', 'solar_optimizer', 'home_efficiency'] });
+    expect(() => assertValidState(pseudoChoosing, standardConfig)).toThrow(/triggeredUpgradeTicks/);
+    const zeroGameOver = stateAt({ status: 'gameOver', tick: 0, gameOverReason: 'familyDepleted' });
+    expect(() => assertValidState(zeroGameOver, standardConfig)).toThrow(/gameOver|tick/);
+  });
+
+  it('accepts the normal three-trigger state and a legal four-trigger config', () => {
+    const choosing = stateAt({ status: 'choosingUpgrade', tick: 180, pendingUpgrades: ['battery_power', 'solar_optimizer', 'home_efficiency'], triggeredUpgradeTicks: [90, 180], selectedUpgrades: ['battery_capacity'] });
+    expect(() => assertValidState(choosing, standardConfig)).not.toThrow();
+    const config = { ...standardConfig, upgradeTicks: [30, 60, 90, 120] };
+    const fourth = stateAt({ status: 'choosingUpgrade', tick: 120, pendingUpgrades: ['battery_power', 'solar_optimizer', 'home_efficiency'], triggeredUpgradeTicks: [30, 60, 90, 120], selectedUpgrades: ['battery_capacity', 'ev_fast_charge', 'grid_contract'] });
+    expect(() => assertValidState(fourth, config)).not.toThrow();
   });
 
   it('accepts legal zero-valued report fields and fractional state resources', () => {

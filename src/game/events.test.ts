@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { advanceEventBeforeEnergy, eventModifiers, resolveEventAfterEnergy, isGridAvailable } from './events';
+import { runTick } from './engine';
 import { standardConfig } from './config';
 import { stateAt } from '../test/fixtures';
 
@@ -105,6 +106,13 @@ describe('events', () => {
     expect(first.nextEventWarningAt).toBeGreaterThan(85);
     expect(second).toEqual(first);
     expect(state.event?.kind).toBe('cloudy');
+  });
+
+  it('does not schedule a cooldown beyond the crisis or duration', () => {
+    const config = { ...standardConfig, eventCooldown: { learningMin: 1000, learningMax: 1000, pressureMin: 1000, pressureMax: 1000 } };
+    const result = runTick(stateAt({ tick: 84, event: { kind: 'cloudy', stage: 'active', startsAt: 60, endsAt: 85, allHomeSupplied: true, targetEvLevel: null } }), config);
+    expect(result.event).toBeNull();
+    expect(result.nextEventWarningAt).toBeNull();
   });
 
   it('draws learning and pressure cooldowns from their configured ranges', () => {

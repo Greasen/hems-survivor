@@ -75,6 +75,7 @@ export function assertValidState(state: GameState, config: GameConfig = standard
   if (state.status === 'ready' && state.tick !== 0) invalid('status', 'ready state must have tick 0');
   if (['running', 'paused', 'choosingUpgrade'].includes(state.status) && state.tick >= config.durationTicks) invalid('status', `${state.status} must be before duration`);
   if (state.status === 'victory' && state.tick !== config.durationTicks) invalid('status', 'victory must be at duration');
+  if (state.status === 'gameOver' && state.tick <= 0) invalid('status', 'gameOver must have a positive tick');
   integer('seed', state.seed);
   if (state.seed < 0 || state.seed > 0xffffffff) invalid('seed', 'must be an unsigned 32-bit integer');
   integer('randomState', state.randomState);
@@ -130,7 +131,7 @@ export function assertValidState(state: GameState, config: GameConfig = standard
   }
   if (state.nextEventWarningAt !== null) {
     integer('nextEventWarningAt', state.nextEventWarningAt);
-    if (state.nextEventWarningAt < 0 || state.nextEventWarningAt > config.durationTicks) invalid('nextEventWarningAt', 'is outside the run');
+    if (state.nextEventWarningAt < state.tick || state.nextEventWarningAt >= config.crisisStartTick || state.nextEventWarningAt > config.durationTicks) invalid('nextEventWarningAt', 'must be at or after state.tick and before crisisStartTick');
   }
   if (state.event && state.nextEventWarningAt !== null) invalid('nextEventWarningAt', 'must be null while an event exists');
   if (state.lastEventKind !== null) oneOf('lastEventKind', state.lastEventKind, ['cloudy', 'peakPrice', 'familyLoad', 'evEmergency']);
@@ -147,6 +148,7 @@ export function assertValidState(state: GameState, config: GameConfig = standard
     integer(`triggeredUpgradeTicks[${index}]`, tick);
     if (!config.upgradeTicks.includes(tick)) invalid(`triggeredUpgradeTicks[${index}]`, 'is not configured');
     if (tick > state.tick) invalid(`triggeredUpgradeTicks[${index}]`, 'cannot be in the future');
+    if (index > 0 && tick <= state.triggeredUpgradeTicks[index - 1]) invalid(`triggeredUpgradeTicks[${index}]`, 'must be strictly increasing');
   });
 
   if (state.gameOverReason !== null) oneOf('gameOverReason', state.gameOverReason, ['familyDepleted', 'sustainedOutage']);
@@ -154,6 +156,13 @@ export function assertValidState(state: GameState, config: GameConfig = standard
   if (state.status !== 'gameOver' && state.gameOverReason !== null) invalid('gameOverReason', 'requires gameOver status');
   if (state.status === 'choosingUpgrade' && state.pendingUpgrades.length !== 3) invalid('pendingUpgrades', 'must contain exactly 3 choices while choosingUpgrade');
   if (state.status !== 'choosingUpgrade' && state.pendingUpgrades.length !== 0) invalid('pendingUpgrades', 'must be empty outside choosingUpgrade');
+  if (state.status === 'choosingUpgrade') {
+    const latestTrigger = state.triggeredUpgradeTicks.at(-1);
+    if (latestTrigger === undefined || latestTrigger !== state.tick || !config.upgradeTicks.includes(latestTrigger)) invalid('triggeredUpgradeTicks', 'choosingUpgrade must be at its configured trigger tick');
+    if (state.triggeredUpgradeTicks.length !== state.selectedUpgrades.length + 1) invalid('triggeredUpgradeTicks', 'choosingUpgrade requires one more trigger than selected upgrade');
+  } else if (state.triggeredUpgradeTicks.length !== state.selectedUpgrades.length) {
+    invalid('triggeredUpgradeTicks', 'non-choosing state requires one trigger per selected upgrade');
+  }
 
   if (state.lastReport) {
     integer('lastReport.tick', state.lastReport.tick);
